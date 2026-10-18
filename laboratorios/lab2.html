@@ -1,0 +1,1140 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Laboratório de campo elétrico</title>
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,'Segoe UI',sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,600&display=swap">
+<style>
+/* Layout: bancada — prancheta quadriculada à esquerda, caderno de medidas à direita; empilha no celular. */
+:root {
+  --paper: #f3f5f6;
+  --sheet: #fbfcfc;
+  --ink: #17232b;
+  --muted: #5a6a74;
+  --grid: #d9e2e7;
+  --grid-major: #c3d0d7;
+  --rule: #d3dce1;
+  --pos: #c2410c;
+  --neg: #1d5fbf;
+  --field: #6d7f8a;
+  --accent: #0f6e6a;
+  --traj: #9a6200;
+  --warn-bg: #fff4e0;
+  --warn-ink: #7a4b00;
+  --region: rgba(15, 110, 106, 0.07);
+  --display: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0f171c; --sheet: #142028; --ink: #e3ebef; --muted: #93a5b0;
+    --grid: #1d2c35; --grid-major: #283a45; --rule: #2a3a44;
+    --pos: #f2814f; --neg: #6aa7ff; --field: #8296a2; --accent: #4fc2b8; --traj: #e6b450;
+    --warn-bg: #3a2a0d; --warn-ink: #f5c97a; --region: rgba(79, 194, 184, 0.08);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0f171c; --sheet: #142028; --ink: #e3ebef; --muted: #93a5b0;
+  --grid: #1d2c35; --grid-major: #283a45; --rule: #2a3a44;
+  --pos: #f2814f; --neg: #6aa7ff; --field: #8296a2; --accent: #4fc2b8; --traj: #e6b450;
+  --warn-bg: #3a2a0d; --warn-ink: #f5c97a; --region: rgba(79, 194, 184, 0.08);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  background: var(--paper); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 32px;
+}
+.wrap { max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+header { display: flex; flex-direction: column; gap: 6px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--display); font-weight: 600; font-size: clamp(26px, 4vw, 36px); line-height: 1.15; margin: 0; text-wrap: balance; }
+.model { max-width: 78ch; color: var(--muted); margin: 0; }
+.model b { color: var(--ink); font-weight: 600; }
+.bench { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 18px; align-items: start; }
+@media (max-width: 900px) { .bench { grid-template-columns: minmax(0, 1fr); } }
+.board { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.canvas-box { background: var(--sheet); border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; touch-action: none; }
+canvas { display: block; width: 100%; height: auto; cursor: crosshair; }
+canvas.grab { cursor: grab; } canvas.grabbing { cursor: grabbing; }
+#cv:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+@media (max-width: 600px) { .toolbar .sep { display: none; } }
+.toolbar .sep { width: 1px; align-self: stretch; background: var(--rule); margin: 0 4px; }
+button, select { font: inherit; font-size: 14px; color: var(--ink); background: var(--sheet); border: 1px solid var(--rule); border-radius: 5px; padding: 6px 11px; cursor: pointer; }
+button:hover { border-color: var(--muted); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--sheet); font-weight: 500; }
+button.pos { color: var(--pos); font-weight: 600; } button.neg { color: var(--neg); font-weight: 600; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+label.check { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--muted); cursor: pointer; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--muted); }
+.legend span::before { content: ""; display: inline-block; width: 16px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle; background: currentColor; }
+.legend .lf { color: var(--field); }
+.legend .ll { color: var(--ink); font-weight: 500; }
+.legend .la { color: var(--accent); font-weight: 600; } .legend .la::before { height: 5px; }
+.legend .lt { color: var(--traj); font-weight: 600; } .legend .lt::before { height: 4px; }
+.legend .ld { color: var(--ink); font-weight: 500; } .legend .ld::before { height: 0; border-top: 2px dashed currentColor; background: none; }
+.notebook { background: var(--sheet); border: 1px solid var(--rule); border-radius: 6px; display: flex; flex-direction: column; min-width: 0; }
+.notebook section { padding: 14px 16px; border-top: 1px solid var(--rule); display: flex; flex-direction: column; gap: 10px; }
+.notebook section:first-child { border-top: none; }
+h2 { font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 0; }
+h3 { font-size: 14px; font-weight: 600; margin: 4px 0 0; }
+.readout { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: baseline; margin: 0; }
+.readout dt { font-size: 14px; } .readout dd { margin: 0; font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 18px; text-align: right; }
+.readout dd.big { font-size: 26px; font-weight: 500; color: var(--accent); }
+.readout dd.txt { font-family: var(--body); font-size: 15px; }
+.readout dt small { display: block; color: var(--muted); font-size: 12px; }
+.readout .sub { border-top: 1px dashed var(--rule); padding-top: 4px; }
+.readout .tr { color: var(--traj); }
+.group { display: flex; flex-direction: column; gap: 6px; border-top: 1px solid var(--rule); padding-top: 10px; }
+.note { font-size: 13px; margin: 0; border-left: 3px solid var(--accent); padding: 2px 0 2px 10px; }
+.warn { background: var(--warn-bg); color: var(--warn-ink); border-radius: 5px; padding: 8px 10px; font-size: 13px; }
+.sit-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.sit-tabs button { font-family: var(--mono); font-size: 13px; padding: 4px 10px; }
+.sit-tabs button[aria-pressed="true"] { background: var(--ink); color: var(--sheet); border-color: var(--ink); }
+.sit-title { font-weight: 600; margin: 0; }
+.sit-text { margin: 0; font-size: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.slider { display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.slider .top { display: flex; justify-content: space-between; gap: 8px; }
+.slider output { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+.hint { font-size: 12px; color: var(--muted); margin: 0; }
+.table-box { overflow-x: auto; max-height: 260px; overflow-y: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 4px 6px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+th:nth-child(2), td:nth-child(2) { text-align: left; }
+th { font-weight: 500; color: var(--muted); font-size: 12px; position: sticky; top: 0; background: var(--sheet); }
+td { font-family: var(--mono); }
+textarea { width: 100%; min-height: 90px; font-family: var(--mono); font-size: 12px; background: var(--paper); color: var(--ink); border: 1px solid var(--rule); border-radius: 5px; padding: 6px; }
+.fit-box { background: var(--paper); border: 1px solid var(--rule); border-radius: 5px; overflow: hidden; }
+#fitCv { cursor: default; }
+.fit-out { font-family: var(--mono); font-size: 14px; font-variant-numeric: tabular-nums; margin: 0; }
+.fit-out b { color: var(--accent); font-weight: 500; }
+.verify { font-family: var(--mono); font-size: 12px; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 12px; display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.verify b { color: var(--accent); font-weight: 500; }
+footer { font-size: 12px; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Eletromagnetismo · Tomo I · Módulo 2 · Laboratório 2</div>
+    <h1>Campo elétrico</h1>
+    <p class="model"><b>Modelo.</b> Cargas pontuais no espaço tridimensional, com posições restritas ao plano da tela, e campo dado pela superposição <b>E = Σ k qᵢ r̂ᵢ / rᵢ²</b>, com k = 1, cargas em q₀, distâncias em u (prancheta de 12 u × 8 u) e campo em k q₀/u². A barra é sempre representada por N cargas iguais; sua expressão contínua aparece só para comparação. A carga de prova solta não perturba as fontes, que ficam fixas, e obedece a m <b>a</b> = q<sub>t</sub> <b>E</b>, sem efeitos relativísticos nem radiação. As linhas de campo são desenhadas apenas no plano da tela, e por isso a densidade delas no desenho não mede |E|.</p>
+  </header>
+
+  <div class="bench">
+    <div class="board">
+      <div class="toolbar" role="toolbar" aria-label="Ferramentas da bancada">
+        <button class="pos" id="addPos" type="button">+ carga positiva</button>
+        <button class="neg" id="addNeg" type="button">− carga negativa</button>
+        <span class="sep" aria-hidden="true"></span>
+        <label class="check" for="optArrows"><input type="checkbox" id="optArrows" checked> vetores</label>
+        <label class="check" for="optLines"><input type="checkbox" id="optLines" checked> linhas de campo</label>
+        <label class="check" for="optProbe"><input type="checkbox" id="optProbe" checked> sonda</label>
+        <span class="sep" aria-hidden="true"></span>
+        <label class="check" for="optRun"><input type="checkbox" id="optRun"> carga solta</label>
+        <label class="check" for="optRod"><input type="checkbox" id="optRod"> barra</label>
+        <label class="check" for="optCount"><input type="checkbox" id="optCount"> círculo de contagem</label>
+        <span class="sep" aria-hidden="true"></span>
+        <label class="check" for="optSnap"><input type="checkbox" id="optSnap" checked> encaixar a 0,1 u</label>
+      </div>
+      <div class="canvas-box"><canvas id="cv" tabindex="0" aria-label="Prancheta com cargas, vetores e linhas de campo, a sonda de campo, a carga de prova solta, a barra carregada e o círculo de contagem. Arraste os objetos; com a prancheta em foco, as setas do teclado movem a sonda."></canvas></div>
+      <div class="legend" id="legend" aria-label="Legenda">
+        <span class="lf" data-k="arrows">vetor E na grade (comprimento comprimido)</span>
+        <span class="ll" data-k="lines">linha de campo</span>
+        <span class="la" data-k="probe">E na sonda</span>
+        <span class="lt" data-k="run">trajetória da carga solta</span>
+        <span class="ld" data-k="run">linha de campo pelo ponto de soltura</span>
+      </div>
+      <p class="hint">Comprimentos das setas comprimidos, L = L<sub>máx</sub>(1 − e<sup>−|E|/E₀</sup>): as direções são exatas, os comprimentos só ordenam intensidades. Arraste cargas, a sonda (anel com mira), o ponto de soltura (losango), as extremidades ou o corpo da barra e o centro do círculo de contagem. Toque numa carga para ajustar q. Com a prancheta em foco, as setas do teclado movem a sonda (0,1 u; com Shift, 1 u).</p>
+    </div>
+
+    <aside class="notebook" aria-label="Caderno de medidas">
+      <section aria-labelledby="h-read">
+        <h2 id="h-read">Medida</h2>
+        <div id="gProbe">
+          <dl class="readout">
+            <dt>|E| na sonda<small>em k q₀/u², soma de todas as fontes</small></dt><dd class="big" id="rE">—</dd>
+            <dt>E<sub>x</sub></dt><dd id="rEx">—</dd>
+            <dt>E<sub>y</sub><small>positivo para cima</small></dt><dd id="rEy">—</dd>
+            <dt>Direção de E<small>ângulo a partir de +x, anti-horário</small></dt><dd id="rAng">—</dd>
+            <dt>Posição da sonda<small>(x; y), em u</small></dt><dd id="rPos">—</dd>
+          </dl>
+        </div>
+        <p class="hint" id="probeOff" hidden>Sonda desligada. Ligue-a na barra de ferramentas para medir E num ponto.</p>
+
+        <div class="group" id="gRod" hidden>
+          <h3>Barra na sonda (só a barra)</h3>
+          <dl class="readout">
+            <dt>|E| da soma de N cargas<small>o que o modelo calcula</small></dt><dd id="rRodN">—</dd>
+            <dt>|E| da barra contínua<small>expressão analítica abaixo</small></dt><dd id="rRodA">—</dd>
+            <dt>Erro relativo<small>|E<sub>N</sub> − E<sub>contínua</sub>| / |E<sub>contínua</sub>|, vetorial</small></dt><dd class="big" id="rRodErr">—</dd>
+            <dt class="sub">d, α₁, α₂<small>distância à reta da barra e ângulos das extremidades</small></dt><dd class="sub" id="rRodGeo">—</dd>
+          </dl>
+          <p class="hint">Com λ = Q/L, d medido da reta da barra até a sonda e os ângulos α₁ e α₂ sob os quais se veem as extremidades, contados a partir da perpendicular baixada da sonda e positivos no sentido de A para B: E<sub>∥</sub> = (kλ/d)(cos α₂ − cos α₁) e E<sub>⊥</sub> = (kλ/d)(sen α₂ − sen α₁).</p>
+        </div>
+
+        <div class="group" id="gRun" hidden>
+          <h3>Carga solta</h3>
+          <dl class="readout">
+            <dt>Tempo decorrido<small>em τ</small></dt><dd class="big tr" id="rT">—</dd>
+            <dt>Energia cinética K<small>em k q₀²/u</small></dt><dd id="rK">—</dd>
+            <dt>Energia potencial U = q<sub>t</sub>V</dt><dd id="rU">—</dd>
+            <dt class="sub">K + U<small>valor inicial entre parênteses</small></dt><dd class="sub" id="rKU">—</dd>
+            <dt>Variação máxima de K + U<small>relativa à maior entre |U₀|, K e |K₀ + U₀|</small></dt><dd id="rDE">—</dd>
+            <dt>Situação</dt><dd class="txt" id="rStat">—</dd>
+          </dl>
+        </div>
+
+        <div class="group" id="gCount" hidden>
+          <h3>Contagem de linhas</h3>
+          <dl class="readout">
+            <dt>Linhas que cruzam o círculo<small>cada cruzamento conta uma vez</small></dt><dd class="big" id="rCn">—</dd>
+            <dt>Raio r</dt><dd id="rCr">—</dd>
+            <dt>Densidade no desenho, n/(2πr)<small>linhas por unidade de comprimento do círculo</small></dt><dd id="rCd">—</dd>
+            <dt>|E| médio no círculo<small>média em 360 pontos</small></dt><dd id="rCe">—</dd>
+          </dl>
+          <p class="note"><b>Limite do desenho plano.</b> A relação entre densidade de linhas e intensidade do campo vale para linhas no espaço, que saem da carga em todas as direções e atravessam esferas; o desenho mostra apenas as linhas contidas num plano, que atravessam círculos. A densidade das linhas desenhadas na tela, portanto, não é uma medida de |E|.</p>
+        </div>
+        <div class="warn" id="warn" hidden></div>
+      </section>
+
+      <section aria-labelledby="h-sit">
+        <h2 id="h-sit">Situações</h2>
+        <div class="sit-tabs" id="sitTabs"></div>
+        <p class="sit-title" id="sitTitle"></p>
+        <p class="sit-text" id="sitText"></p>
+      </section>
+
+      <section aria-labelledby="h-ctrl">
+        <h2 id="h-ctrl">Ajustes</h2>
+        <div class="slider" id="qBox">
+          <div class="top"><label for="qSrc">q da carga selecionada</label><output id="qOut" for="qSrc">—</output></div>
+          <input type="range" id="qSrc" min="-3" max="3" step="0.5" value="1">
+          <div class="row"><button type="button" id="delCharge">Remover carga</button></div>
+        </div>
+        <p class="hint" id="noCharge" hidden>Nenhuma carga pontual selecionada. Toque numa carga, ou acrescente uma pelos botões acima da prancheta.</p>
+        <div class="slider" id="lpqBox">
+          <div class="top"><label for="lpq">Linhas por unidade de carga</label><output id="lpqOut" for="lpq">8</output></div>
+          <input type="range" id="lpq" min="4" max="16" step="2" value="8">
+          <p class="hint">O número de linhas que partem de cada fonte positiva é proporcional a |q|.</p>
+        </div>
+
+        <div class="group" id="cRun" hidden>
+          <h3>Carga solta</h3>
+          <div class="slider">
+            <div class="top"><label for="qt">Carga de prova q<sub>t</sub></label><output id="qtOut" for="qt">+1,0 q₀</output></div>
+            <input type="range" id="qt" min="-2" max="2" step="0.1" value="1">
+          </div>
+          <div class="slider">
+            <div class="top"><label for="mass">Massa m</label><output id="mOut" for="mass">1,0 m₀</output></div>
+            <input type="range" id="mass" min="0.2" max="10" step="0.1" value="1">
+          </div>
+          <div class="slider">
+            <div class="top"><label for="v0">Velocidade inicial |v₀|</label><output id="v0Out" for="v0">0,00 u/τ</output></div>
+            <input type="range" id="v0" min="0" max="1.5" step="0.05" value="0">
+          </div>
+          <div class="slider">
+            <div class="top"><label for="v0a">Direção de v₀</label><output id="v0aOut" for="v0a">0°</output></div>
+            <input type="range" id="v0a" min="0" max="355" step="5" value="0">
+          </div>
+          <div class="row">
+            <button class="primary" type="button" id="go">Soltar</button>
+            <button type="button" id="pause" disabled>Pausar</button>
+            <button type="button" id="resetRun">Reiniciar</button>
+          </div>
+          <label class="check" for="optRelLine"><input type="checkbox" id="optRelLine" checked> linha de campo pelo ponto de soltura</label>
+          <p class="hint">Tempo em τ = √(m₀u³/kq₀²), velocidade em u/τ, energia em k q₀²/u. Integração por Runge–Kutta de 4ª ordem com passo fixo Δt = 2×10⁻⁴ √(m/|q<sub>t</sub>|) τ; o movimento para a 0,15 u de uma fonte ou na borda da prancheta. A animação não está em tempo real; leia o tempo no caderno.</p>
+        </div>
+
+        <div class="group" id="cRod" hidden>
+          <h3>Barra</h3>
+          <div class="slider">
+            <div class="top"><label for="nRod">Número de cargas N</label><output id="nRodOut" for="nRod">1</output></div>
+            <input type="range" id="nRod" min="0" max="20" step="1" value="0">
+          </div>
+          <div class="slider">
+            <div class="top"><label for="qRod">Carga total Q</label><output id="qRodOut" for="qRod">+4,0 q₀</output></div>
+            <input type="range" id="qRod" min="-4" max="4" step="0.5" value="4">
+          </div>
+          <div class="slider">
+            <div class="top"><label for="lRod">Comprimento L</label><output id="lRodOut" for="lRod">4,0 u</output></div>
+            <input type="range" id="lRod" min="0.5" max="8" step="0.5" value="4">
+          </div>
+          <p class="hint">Cada carga vale Q/N e fica no ponto médio de um dos N trechos iguais da barra. O controle de N anda em passos aproximadamente logarítmicos de 1 a 200.</p>
+        </div>
+
+        <div class="group" id="cCount" hidden>
+          <h3>Círculo de contagem</h3>
+          <div class="slider">
+            <div class="top"><label for="rC">Raio do círculo</label><output id="rCOut" for="rC">1,00 u</output></div>
+            <input type="range" id="rC" min="0.2" max="3.8" step="0.05" value="1">
+          </div>
+          <p class="hint">Arraste o centro do círculo; perto de uma carga ele se encaixa nela.</p>
+        </div>
+      </section>
+
+      <section aria-labelledby="h-reg">
+        <h2 id="h-reg">Registro</h2>
+        <label class="check" for="kindSel">Tabela
+          <select id="kindSel">
+            <option value="probe">Sonda</option>
+            <option value="run">Carga solta</option>
+            <option value="rod">Barra</option>
+            <option value="count">Contagem de linhas</option>
+          </select>
+        </label>
+        <div class="row">
+          <button class="primary" type="button" id="record">Registrar medida</button>
+          <button type="button" id="copyCsv">Copiar tabela</button>
+          <button type="button" id="clearRec">Limpar</button>
+        </div>
+        <p class="hint" id="recHint" hidden></p>
+        <div class="table-box">
+          <table>
+            <thead id="recHead"></thead>
+            <tbody id="recBody"></tbody>
+          </table>
+        </div>
+        <div id="fitBlock" hidden>
+          <p class="sit-title">Erro relativo contra N, em escala log-log</p>
+          <div class="fit-box"><canvas id="fitCv" aria-label="Gráfico de log₁₀ do erro relativo contra log₁₀ N com os pontos registrados e a reta de mínimos quadrados"></canvas></div>
+          <p class="fit-out" id="fitOut"></p>
+          <p class="hint" id="fitNote"></p>
+        </div>
+        <p class="hint" id="copyMsg" hidden></p>
+        <textarea id="csvBox" hidden readonly aria-label="Tabela em formato CSV"></textarea>
+      </section>
+    </aside>
+  </div>
+
+  <div class="verify" id="verify" aria-label="Teste de verificação"></div>
+  <footer>Licença CC BY-NC-SA 4.0 [confirmar]. Penn Lee Menezes Rodrigues, UEPA. Protótipo v0.1, outubro de 2026.</footer>
+</div>
+
+<script>
+/* Núcleo físico do Laboratório 2 (Campo elétrico).
+   Modelo: cargas pontuais no espaço tridimensional, com posições restritas ao plano da tela.
+   E = sum_i k q_i r_hat_i / r_i^2, com k = 1, cargas em q0, distâncias em u; E em k q0/u^2.
+   Potencial V = sum_i k q_i / r_i (em k q0/u); energia em k q0^2/u.
+   Carga de prova solta: m dv/dt = q_t E, massa em m0, tempo em tau = sqrt(m0 u^3/(k q0^2)).
+   Coordenadas do mundo: x para a direita, y para baixo (como na tela); a interface converte
+   para a convenção exibida, y para cima com origem no canto inferior esquerdo.
+   Barra: segmento de A = (x1, y1) a B = (x2, y2), carga total Q, representada por N cargas Q/N
+   nos pontos médios de N segmentos iguais (regra do ponto médio aplicada a int k dq r_hat/r^2). */
+const Phys = (() => {
+  /* Campo total em (x, y) por superposição. */
+  function field(x, y, charges) {
+    let ex = 0, ey = 0;
+    for (let i = 0; i < charges.length; i++) {
+      const c = charges[i], dx = x - c.x, dy = y - c.y, r2 = dx * dx + dy * dy;
+      if (r2 < 1e-20) continue;
+      const k = c.q / (r2 * Math.sqrt(r2));
+      ex += k * dx; ey += k * dy;
+    }
+    return { ex, ey, mag: Math.hypot(ex, ey) };
+  }
+
+  function potential(x, y, charges) {
+    let v = 0;
+    for (let i = 0; i < charges.length; i++) { const c = charges[i]; const r = Math.hypot(x - c.x, y - c.y); if (r > 1e-10) v += c.q / r; }
+    return v;
+  }
+
+  /* Representação discreta da barra: N cargas iguais nos pontos médios. */
+  function rodCharges(rod) {
+    const out = [], N = Math.max(1, Math.round(rod.N)), q = rod.Q / N;
+    for (let i = 0; i < N; i++) {
+      const t = (i + 0.5) / N;
+      out.push({ x: rod.x1 + t * (rod.x2 - rod.x1), y: rod.y1 + t * (rod.y2 - rod.y1), q, rod: true });
+    }
+    return out;
+  }
+
+  /* Geometria do ponto P em relação à barra: u_hat ao longo de A->B, s = projeção de AP em u_hat,
+     d = distância perpendicular (>= 0), n_hat = direção perpendicular que aponta da reta para P.
+     alfaA, alfaB = ângulos, medidos a partir da perpendicular baixada de P, sob os quais se veem
+     as extremidades A e B (positivos no sentido de u_hat). */
+  function rodGeometry(x, y, rod) {
+    const Lx = rod.x2 - rod.x1, Ly = rod.y2 - rod.y1, L = Math.hypot(Lx, Ly);
+    const ux = Lx / L, uy = Ly / L, px = x - rod.x1, py = y - rod.y1;
+    const s = px * ux + py * uy;
+    const wx = px - s * ux, wy = py - s * uy, d = Math.hypot(wx, wy);
+    const nx = d > 0 ? wx / d : -uy, ny = d > 0 ? wy / d : ux;
+    return { L, ux, uy, nx, ny, s, d, rA: Math.hypot(s, d), rB: Math.hypot(L - s, d),
+      alfaA: Math.atan2(-s, d), alfaB: Math.atan2(L - s, d) };
+  }
+
+  /* Campo exato da barra finita (lambda = Q/L):
+       E_par  = k lambda (1/rB - 1/rA)                = (k lambda/d)(cos alfaB - cos alfaA)
+       E_perp = (k lambda/d)[(L - s)/rB + s/rA]        = (k lambda/d)(sin alfaB - sin alfaA)
+     A forma em r vale também sobre a reta da barra (d = 0, fora do segmento). */
+  function rodFieldExact(x, y, rod) {
+    const g = rodGeometry(x, y, rod), lam = rod.Q / g.L;
+    const epar = lam * (1 / g.rB - 1 / g.rA);
+    const eperp = g.d > 1e-12 ? (lam / g.d) * ((g.L - g.s) / g.rB + g.s / g.rA) : 0;
+    const ex = epar * g.ux + eperp * g.nx, ey = epar * g.uy + eperp * g.ny;
+    return { ex, ey, mag: Math.hypot(ex, ey), epar, eperp, g };
+  }
+  /* Potencial exato da barra: k lambda ln[(s' + rB)/(s'' + rA)] escrito de forma estável. */
+  function rodPotentialExact(x, y, rod) {
+    const g = rodGeometry(x, y, rod), lam = rod.Q / g.L;
+    return lam * (Math.asinh((g.L - g.s) / g.d) + Math.asinh(g.s / g.d));
+  }
+
+  function distToSegment(px, py, ax, ay, bx, by) {
+    const dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy;
+    let t = L2 > 0 ? ((px - ax) * dx + (py - ay) * dy) / L2 : 0;
+    t = Math.max(0, Math.min(1, t));
+    return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+  }
+
+  /* Todas as fontes pontuais da cena (cargas + representação discreta da barra). */
+  function sources(scene) {
+    const s = scene.charges.map(c => ({ x: c.x, y: c.y, q: c.q }));
+    if (scene.rod) for (const c of rodCharges(scene.rod)) s.push(c);
+    return s;
+  }
+  /* A barra conta como "cargas separadas" quando o espaçamento L/N passa de 0,15 u;
+     abaixo disso é tratada como um segmento para parar linhas e trajetórias. */
+  function rodIsSparse(rod) { return Math.hypot(rod.x2 - rod.x1, rod.y2 - rod.y1) / Math.max(1, Math.round(rod.N)) > 0.15; }
+  /* Distância à fonte mais próxima (carga pontual, carga da barra ou segmento da barra). */
+  function nearestSource(x, y, scene) {
+    let d = Infinity;
+    for (const c of scene.charges) d = Math.min(d, Math.hypot(x - c.x, y - c.y));
+    if (scene.rod) {
+      const r = scene.rod;
+      if (rodIsSparse(r)) for (const c of rodCharges(r)) d = Math.min(d, Math.hypot(x - c.x, y - c.y));
+      else d = Math.min(d, distToSegment(x, y, r.x1, r.y1, r.x2, r.y2));
+    }
+    return d;
+  }
+
+  /* Linha de campo por RK4 no campo de direções unitárias, passo h em comprimento de arco.
+     sign = +1 segue E, -1 segue -E. Para fora da caixa, perto de uma fonte, ou em ponto de campo nulo. */
+  function fieldLine(x0, y0, srcs, scene, sign, opt) {
+    const h = opt.h || 0.04, maxSteps = opt.maxSteps || 900, b = opt.bounds, rStop = opt.rStop || 0.1, skip = opt.skip ?? 4;
+    const dir = (x, y) => { const f = field(x, y, srcs); if (f.mag < 1e-12) return null; return [sign * f.ex / f.mag, sign * f.ey / f.mag]; };
+    let x = x0, y = y0;
+    const path = [[x, y]];
+    for (let s = 0; s < maxSteps; s++) {
+      const k1 = dir(x, y); if (!k1) break;
+      const k2 = dir(x + h / 2 * k1[0], y + h / 2 * k1[1]); if (!k2) break;
+      const k3 = dir(x + h / 2 * k2[0], y + h / 2 * k2[1]); if (!k3) break;
+      const k4 = dir(x + h * k3[0], y + h * k3[1]); if (!k4) break;
+      x += h / 6 * (k1[0] + 2 * k2[0] + 2 * k3[0] + k4[0]);
+      y += h / 6 * (k1[1] + 2 * k2[1] + 2 * k3[1] + k4[1]);
+      path.push([x, y]);
+      if (b && (x < b[0] || x > b[2] || y < b[1] || y > b[3])) break;
+      if (s >= skip && nearestSource(x, y, scene) < rStop) break;
+    }
+    return path;
+  }
+
+  /* Linhas de campo: começam igualmente espaçadas em torno das fontes positivas, em número
+     proporcional a |q| (perLine linhas por unidade de q0). Se não houver fonte positiva,
+     partem das negativas e seguem -E. A barra recebe sementes igualmente espaçadas num contorno
+     em forma de estádio a 0,15 u do segmento. */
+  function fieldLines(scene, opt = {}) {
+    const LPQ = opt.perQ || 8, r0 = opt.r0 || 0.12, srcs = opt.srcs || sources(scene);
+    const pos = scene.charges.filter(c => c.q > 0), hasRodPos = scene.rod && scene.rod.Q > 0;
+    let sign = 1, pts = pos, rodSeed = hasRodPos;
+    if (!pos.length && !hasRodPos) { sign = -1; pts = scene.charges.filter(c => c.q < 0); rodSeed = scene.rod && scene.rod.Q < 0; }
+    const seeds = [];
+    for (const c of pts) {
+      const n = Math.round(LPQ * Math.abs(c.q));
+      for (let k = 0; k < n; k++) { const t = (2 * Math.PI * (k + 0.5)) / n; seeds.push([c.x + r0 * Math.cos(t), c.y + r0 * Math.sin(t)]); }
+    }
+    const rodPer = rodSeed ? Math.round(LPQ * Math.abs(scene.rod.Q) / Math.max(1, Math.round(scene.rod.N))) : 0;
+    if (rodSeed && rodIsSparse(scene.rod) && rodPer >= 2) {
+      // barra com cargas bem separadas: linhas igualmente espaçadas em torno de cada carga Q/N
+      for (const c of rodCharges(scene.rod)) for (let k = 0; k < rodPer; k++) { const t = (2 * Math.PI * (k + 0.5)) / rodPer; seeds.push([c.x + r0 * Math.cos(t), c.y + r0 * Math.sin(t)]); }
+    } else if (rodSeed) {
+      const r = scene.rod, g = rodGeometry(r.x1, r.y1, r), L = g.L, a = 0.15;
+      const per = 2 * L + 2 * Math.PI * a, n = Math.round(LPQ * Math.abs(r.Q));
+      for (let k = 0; k < n; k++) {
+        let s = per * (k + 0.5) / n, px, py;
+        if (s < L) { px = r.x1 + g.ux * s - g.uy * a; py = r.y1 + g.uy * s + g.ux * a; }
+        else if ((s -= L) < Math.PI * a) { const th = s / a; px = r.x2 + a * (-g.uy * Math.cos(th) + g.ux * Math.sin(th)); py = r.y2 + a * (g.ux * Math.cos(th) + g.uy * Math.sin(th)); }
+        else if ((s -= Math.PI * a) < L) { px = r.x2 - g.ux * s + g.uy * a; py = r.y2 - g.uy * s - g.ux * a; }
+        else { s -= L; const th = s / a; px = r.x1 + a * (g.uy * Math.cos(th) - g.ux * Math.sin(th)); py = r.y1 + a * (-g.ux * Math.cos(th) - g.uy * Math.sin(th)); }
+        seeds.push([px, py]);
+      }
+    }
+    return seeds.map(([x, y]) => fieldLine(x, y, srcs, scene, sign, { ...opt, skip: 4 }));
+  }
+
+  /* Número de vezes que as linhas atravessam a circunferência de centro (cx, cy) e raio r. */
+  function countCrossings(lines, cx, cy, r) {
+    let n = 0;
+    const hits = [];
+    for (const p of lines) {
+      for (let i = 1; i < p.length; i++) {
+        const a = Math.hypot(p[i - 1][0] - cx, p[i - 1][1] - cy) - r, b = Math.hypot(p[i][0] - cx, p[i][1] - cy) - r;
+        if ((a < 0 && b >= 0) || (a >= 0 && b < 0)) { n++; const t = a / (a - b); hits.push([p[i - 1][0] + t * (p[i][0] - p[i - 1][0]), p[i - 1][1] + t * (p[i][1] - p[i - 1][1])]); }
+      }
+    }
+    return { n, hits };
+  }
+
+  /* Carga de prova solta: RK4 com passo fixo dt nas variáveis (x, y, vx, vy).
+     dt = h0 * sqrt(m/|q_t|), de modo que o número de passos não dependa da escala de tempo
+     fixada por q_t/m. Para ao chegar a rStop de uma fonte, ao sair da caixa ou em tMax. */
+  function makeRun(scene, qt, m, x0, y0, vx0, vy0, opt = {}) {
+    const srcs = opt.srcs || sources(scene);
+    const dt = (opt.h0 || 2e-4) * Math.sqrt(m / Math.max(Math.abs(qt), 0.05));
+    const b = opt.bounds, rStop = opt.rStop || 0.15, tMax = opt.tMax || 80;
+    const acc = (x, y) => { const f = field(x, y, srcs); return [qt * f.ex / m, qt * f.ey / m]; };
+    const U = (x, y) => qt * potential(x, y, srcs);
+    const st = { x: x0, y: y0, vx: vx0, vy: vy0, t: 0, steps: 0, dt, stopped: null, path: [[x0, y0, 0]] };
+    st.K0 = 0.5 * m * (vx0 * vx0 + vy0 * vy0); st.U0 = U(x0, y0); st.E0 = st.K0 + st.U0;
+    st.K = st.K0; st.U = st.U0; st.E = st.E0; st.maxDE = 0;
+    if (nearestSource(x0, y0, scene) < rStop) st.stopped = "fonte";
+    function energy() { st.K = 0.5 * m * (st.vx * st.vx + st.vy * st.vy); st.U = U(st.x, st.y); st.E = st.K + st.U; st.maxDE = Math.max(st.maxDE, Math.abs(st.E - st.E0)); }
+    function step() {
+      const { x, y, vx, vy } = st, h = dt;
+      const a1 = acc(x, y);
+      const a2 = acc(x + h / 2 * vx, y + h / 2 * vy);
+      const v2x = vx + h / 2 * a1[0], v2y = vy + h / 2 * a1[1];
+      const a3 = acc(x + h / 2 * v2x, y + h / 2 * v2y);
+      const v3x = vx + h / 2 * a2[0], v3y = vy + h / 2 * a2[1];
+      const a4 = acc(x + h * v3x, y + h * v3y);
+      const v4x = vx + h * a3[0], v4y = vy + h * a3[1];
+      st.x = x + h / 6 * (vx + 2 * v2x + 2 * v3x + v4x);
+      st.y = y + h / 6 * (vy + 2 * v2y + 2 * v3y + v4y);
+      st.vx = vx + h / 6 * (a1[0] + 2 * a2[0] + 2 * a3[0] + a4[0]);
+      st.vy = vy + h / 6 * (a1[1] + 2 * a2[1] + 2 * a3[1] + a4[1]);
+      st.t += h; st.steps++;
+    }
+    /* Avança até maxSteps passos ou até percorrer maxArc (comprimento de arco), o que vier antes. */
+    function advance(maxSteps = Infinity, maxArc = Infinity, tUntil = Infinity) {
+      let arc = 0;
+      for (let i = 0; i < maxSteps && !st.stopped && st.t < tUntil; i++) {
+        const px = st.x, py = st.y;
+        step();
+        arc += Math.hypot(st.x - px, st.y - py);
+        if (st.steps % 10 === 0 || arc >= maxArc) st.path.push([st.x, st.y, st.t]);
+        if (b && (st.x < b[0] || st.x > b[2] || st.y < b[1] || st.y > b[3])) st.stopped = "borda";
+        else if (nearestSource(st.x, st.y, scene) < rStop) st.stopped = "fonte";
+        else if (st.t >= tMax) st.stopped = "tempo";
+        if (st.stopped || arc >= maxArc) break;
+      }
+      const last = st.path[st.path.length - 1];
+      if (last[0] !== st.x || last[1] !== st.y) st.path.push([st.x, st.y, st.t]);
+      energy();
+      return st;
+    }
+    return { st, advance, step };
+  }
+
+  /* Mínimos quadrados de log10 y contra log10 x; inclinação e seu erro padrão. */
+  function fitLogLog(xsIn, ysIn) {
+    const xs = [], ys = [];
+    for (let i = 0; i < xsIn.length; i++) if (xsIn[i] > 0 && ysIn[i] > 0) { xs.push(Math.log10(xsIn[i])); ys.push(Math.log10(ysIn[i])); }
+    const N = xs.length;
+    if (N < 2) return { ok: false, N, xs, ys };
+    const mx = xs.reduce((a, b) => a + b, 0) / N, my = ys.reduce((a, b) => a + b, 0) / N;
+    let Sxx = 0, Sxy = 0;
+    for (let i = 0; i < N; i++) { Sxx += (xs[i] - mx) ** 2; Sxy += (xs[i] - mx) * (ys[i] - my); }
+    if (Sxx < 1e-12) return { ok: false, N, xs, ys, degenerate: true };
+    const slope = Sxy / Sxx, intercept = my - slope * mx;
+    let ssr = 0;
+    for (let i = 0; i < N; i++) ssr += (ys[i] - intercept - slope * xs[i]) ** 2;
+    const se = N > 2 ? Math.sqrt(ssr / (N - 2) / Sxx) : NaN;
+    return { ok: true, N, xs, ys, slope, intercept, se };
+  }
+
+  /* Valores do controle de N (passos aproximadamente logarítmicos de 1 a 200). */
+  const N_STEPS = [1, 2, 3, 4, 5, 6, 8, 10, 12, 15, 20, 25, 30, 40, 50, 60, 80, 100, 120, 150, 200];
+
+  return { field, potential, rodCharges, rodIsSparse, rodGeometry, rodFieldExact, rodPotentialExact, distToSegment, sources, nearestSource,
+    fieldLine, fieldLines, countCrossings, makeRun, fitLogLog, N_STEPS };
+})();
+if (typeof module !== "undefined") module.exports = Phys;
+</script>
+<script>
+(() => {
+  const W = 12, H = 8, BOUNDS = [0, 0, W, H], LINE_BOUNDS = [-0.5, -0.5, W + 0.5, H + 0.5];
+  const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+  const fcv = document.getElementById("fitCv"), fctx = fcv.getContext("2d");
+  const $ = id => document.getElementById(id);
+  const fmt = (v, d = 4) => (Math.abs(v) < 0.5 * Math.pow(10, -d) ? 0 : v).toLocaleString("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d });
+  const signed = (v, d) => (v > 0 ? "+" : "") + fmt(v, d);
+  const sig = (v, s = 4) => Math.abs(v) < 1e-12 ? "0" : v.toLocaleString("pt-BR", { minimumSignificantDigits: s, maximumSignificantDigits: s, useGrouping: false });
+  const SUP = { "-": "⁻", "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹" };
+  const sci = (v, d = 2) => { if (!isFinite(v)) return "—"; if (v === 0) return "0"; const [m, e] = v.toExponential(d).split("e"); const ei = parseInt(e, 10); if (ei >= -2 && ei <= 3) return sig(v, d + 1); return m.replace(".", ",") + " × 10" + String(ei).split("").map(c => SUP[c] || c).join(""); };
+  const sciCsv = v => !isFinite(v) ? "" : v.toExponential(4).replace(".", ",").toUpperCase();
+  const pos = (x, y, d = 2) => "(" + fmt(x, d) + "; " + fmt(H - y, d) + ")";
+  const deg = a => { let g = a * 180 / Math.PI; if (g < 0) g += 360; return fmt(g, 1).replace(/^360,0$/, "0,0") + "°"; };
+
+  // Configurações escritas na convenção exibida (y para cima); convertidas para a tela ao carregar.
+  const situations = [
+    { title: "1. Vetores e linhas", kind: "probe",
+      setup: () => ({ charges: [{ x: 4.5, y: 4, q: 1 }, { x: 7.5, y: 4, q: -1 }], probe: { x: 6, y: 6 }, tools: { arrows: true, lines: true, probe: true } }),
+      text: "Compare a grade de vetores com as linhas de campo do dipolo, ligando e desligando cada representação, e anote o que cada uma mostra com clareza e o que cada uma deixa de mostrar. Antes de mover a sonda, desenhe no caderno a direção que você espera para E em três pontos: um sobre o eixo do dipolo, fora do segmento entre as cargas, um sobre a mediatriz e um terceiro fora dessas duas retas. Leve a sonda a cada ponto, registre a medida e verifique se a direção medida concorda com a linha de campo que passa por ali." },
+    { title: "2. Linha não é trajetória", kind: "run",
+      setup: () => ({ charges: [{ x: 4, y: 4, q: 1 }, { x: 8, y: 4, q: -1 }], rel: { x: 5, y: 5.5 }, qt: 1, m: 1, v0: 0, tools: { arrows: false, lines: true, probe: false, run: true } }),
+      text: "Uma carga de prova positiva será solta do repouso no losango, fora do eixo do dipolo. Desenhe no caderno o caminho que você espera que ela siga e decida se ele coincide com a linha de campo tracejada que passa pelo mesmo ponto. Toque em Soltar, compare e registre. Repita com outra massa, prevendo antes o que muda no caminho e no tempo, e depois com uma velocidade inicial diferente de zero. Explique o resultado a partir da segunda lei de Newton e verifique o que acontece com K + U ao longo de cada lançamento." },
+    { title: "3. Do discreto ao contínuo", kind: "rod",
+      setup: () => ({ charges: [], rod: { x1: 4, y1: 5.5, x2: 8, y2: 5.5, Q: 4, N: 1 }, probe: { x: 6, y: 1.5 }, tools: { arrows: true, lines: false, probe: true, rod: true } }),
+      text: "A barra de carga Q e comprimento L é representada por N cargas iguais, e a sonda está a uma distância L da barra, sobre a mediatriz. Para N = 1, 2, 5, 10, 50 e 200, preveja quanto o erro relativo deve diminuir a cada passo e registre a medida. Leia a inclinação do gráfico log-log e relacione a soma das N contribuições com a integral ∫ k dq r̂/r², explicando de onde vem a diferença que resta. Depois leve a sonda para bem perto da barra, repita algumas medidas e compare." },
+    { title: "4. Densidade de linhas", kind: "count",
+      setup: () => ({ charges: [{ x: 6, y: 4, q: 2 }], circ: { x: 6, y: 4, r: 1 }, tools: { arrows: false, lines: true, probe: false, count: true } }),
+      text: "Com a carga isolada, registre o número de linhas que cruzam o círculo para pelo menos cinco raios diferentes, junto com a densidade n/(2πr) e o |E| médio no círculo. Compare, em tabela ou gráfico, como a densidade desenhada e a intensidade do campo variam com r. Imagine em seguida as mesmas linhas saindo da carga em todas as direções do espaço, conte como elas atravessariam esferas de raios diferentes e explique por que o desenho no plano não reproduz a dependência 1/r² do campo." }
+  ];
+
+  const N_STEPS = Phys.N_STEPS;
+  const state = {
+    sit: 0, charges: [], sel: 0, rod: null, rodOn: false,
+    probe: { x: 6, y: 2 }, rel: { x: 5, y: 2.5 }, circ: { x: 6, y: 4, r: 1 },
+    qt: 1, m: 1, v0: 0, v0a: 0, lpq: 8,
+    arrows: true, lines: true, probeOn: true, runOn: false, countOn: false, relLine: true, snap: true,
+    kind: "probe", records: []
+  };
+  let run = null, running = false, rafId = 0;
+  let cache = { lines: null, relLine: null, srcs: null };
+  const dirty = () => { cache = { lines: null, relLine: null, srcs: null }; };
+  const scene = () => ({ charges: state.charges, rod: state.rodOn ? state.rod : null });
+  const srcs = () => cache.srcs || (cache.srcs = Phys.sources(scene()));
+  const getLines = () => cache.lines || (cache.lines = Phys.fieldLines(scene(), { perQ: state.lpq, bounds: LINE_BOUNDS, srcs: srcs() }));
+  function getRelLine() {
+    if (cache.relLine) return cache.relLine;
+    const o = { h: 0.03, maxSteps: 1500, bounds: LINE_BOUNDS, skip: 0, rStop: 0.1 }, S = srcs(), sc = scene();
+    const f = Phys.fieldLine(state.rel.x, state.rel.y, S, sc, 1, o), b = Phys.fieldLine(state.rel.x, state.rel.y, S, sc, -1, o);
+    return (cache.relLine = { f, b });
+  }
+
+  function setTool(key, id, val) { state[key] = val; $(id).checked = val; }
+  function loadSituation(i) {
+    const S = situations[i], s = S.setup();
+    state.sit = i; stopRun(); run = null;
+    state.charges = s.charges.map(c => ({ ...c, y: H - c.y })); state.sel = 0;
+    if (s.rod) state.rod = { ...s.rod, y1: H - s.rod.y1, y2: H - s.rod.y2 };
+    else if (!state.rod) state.rod = { x1: 4, y1: H - 5.5, x2: 8, y2: H - 5.5, Q: 4, N: 1 };
+    if (s.probe) state.probe = { x: s.probe.x, y: H - s.probe.y };
+    if (s.rel) state.rel = { x: s.rel.x, y: H - s.rel.y };
+    if (s.circ) state.circ = { x: s.circ.x, y: H - s.circ.y, r: s.circ.r };
+    if (s.qt != null) { state.qt = s.qt; state.m = s.m; state.v0 = s.v0; state.v0a = 0; }
+    const t = s.tools;
+    setTool("arrows", "optArrows", !!t.arrows); setTool("lines", "optLines", !!t.lines); setTool("probeOn", "optProbe", !!t.probe);
+    setTool("runOn", "optRun", !!t.run); setTool("rodOn", "optRod", !!t.rod); setTool("countOn", "optCount", !!t.count);
+    state.lpq = 8; state.kind = S.kind; $("kindSel").value = S.kind;
+    [...$("sitTabs").children].forEach((b, k) => b.setAttribute("aria-pressed", k === i ? "true" : "false"));
+    $("sitTitle").textContent = S.title; $("sitText").textContent = S.text;
+    $("copyMsg").hidden = true; $("csvBox").hidden = true;
+    syncControls(); dirty(); update(); renderRecords();
+  }
+
+  // ---------- cálculo ----------
+  let calc = null;
+  function recompute() {
+    const S = srcs(), sc = scene(), c = {};
+    c.E = Phys.field(state.probe.x, state.probe.y, S);
+    c.dProbe = Phys.nearestSource(state.probe.x, state.probe.y, sc);
+    if (state.rodOn) {
+      const r = state.rod, part = Phys.field(state.probe.x, state.probe.y, Phys.rodCharges(r)), ex = Phys.rodFieldExact(state.probe.x, state.probe.y, r);
+      c.rodN = part; c.rodA = ex; c.rodErr = ex.mag > 0 ? Math.hypot(part.ex - ex.ex, part.ey - ex.ey) / ex.mag : NaN;
+      c.rodDseg = Phys.distToSegment(state.probe.x, state.probe.y, r.x1, r.y1, r.x2, r.y2);
+      c.rodL = Math.hypot(r.x2 - r.x1, r.y2 - r.y1);
+    }
+    if (state.countOn) {
+      const C = state.circ, cc = Phys.countCrossings(getLines(), C.x, C.y, C.r);
+      let m = 0; const K = 360; for (let k = 0; k < K; k++) { const t = 2 * Math.PI * k / K; m += Phys.field(C.x + C.r * Math.cos(t), C.y + C.r * Math.sin(t), S).mag; }
+      c.count = { n: cc.n, hits: cc.hits, dens: cc.n / (2 * Math.PI * C.r), Emean: m / K };
+    }
+    calc = c;
+  }
+
+  // ---------- carga solta ----------
+  function newRun() {
+    const a = state.v0a * Math.PI / 180;
+    run = Phys.makeRun(scene(), state.qt, state.m, state.rel.x, state.rel.y, state.v0 * Math.cos(a), -state.v0 * Math.sin(a), { bounds: BOUNDS, rStop: 0.15, srcs: srcs(), tMax: 400 });
+  }
+  function stopRun() { running = false; cancelAnimationFrame(rafId); $("pause").disabled = true; $("pause").textContent = "Pausar"; }
+  function tick() {
+    if (!running || !run) return;
+    run.advance(40000, 0.35, run.st.t + 0.06);
+    if (run.st.stopped) stopRun();
+    draw(); panelRun();
+    if (running) rafId = requestAnimationFrame(tick);
+  }
+  function resetRun() { stopRun(); run = null; draw(); panelRun(); }
+
+  // ---------- desenho ----------
+  let scale = 60, dpr = 1, colors = {};
+  function readColors() {
+    const cs = getComputedStyle(document.documentElement);
+    for (const k of ["sheet", "paper", "ink", "muted", "grid", "grid-major", "rule", "pos", "neg", "field", "accent", "traj", "region"]) colors[k] = cs.getPropertyValue("--" + k).trim();
+  }
+  function resize() {
+    const w = cv.parentElement.clientWidth;
+    dpr = window.devicePixelRatio || 1;
+    scale = w / W;
+    cv.width = Math.round(w * dpr); cv.height = Math.round(H * scale * dpr);
+    cv.style.height = H * scale + "px";
+    fcv.width = 0;
+    draw(); drawFit();
+  }
+  const X = x => x * scale, Y = y => y * scale;
+  function arrow(c, x, y, ux, uy, L, color, alpha, width = 1.4, head = 6) {
+    const x2 = x + ux * L, y2 = y + uy * L, h = Math.min(head, L * 0.4);
+    c.globalAlpha = alpha; c.strokeStyle = color; c.fillStyle = color; c.lineWidth = width; c.lineCap = "round";
+    c.beginPath(); c.moveTo(x, y); c.lineTo(x2 - ux * h * 0.6, y2 - uy * h * 0.6); c.stroke();
+    c.beginPath(); c.moveTo(x2, y2);
+    c.lineTo(x2 - ux * h - uy * h * 0.55, y2 - uy * h + ux * h * 0.55);
+    c.lineTo(x2 - ux * h + uy * h * 0.55, y2 - uy * h - ux * h * 0.55);
+    c.closePath(); c.fill(); c.globalAlpha = 1;
+  }
+  function polyline(path, color, width, alpha, dash) {
+    if (!path || path.length < 2) return;
+    ctx.strokeStyle = color; ctx.lineWidth = width; ctx.globalAlpha = alpha; ctx.lineJoin = "round"; ctx.lineCap = "round";
+    if (dash) ctx.setLineDash(dash);
+    ctx.beginPath(); path.forEach((p, i) => i ? ctx.lineTo(X(p[0]), Y(p[1])) : ctx.moveTo(X(p[0]), Y(p[1]))); ctx.stroke();
+    ctx.setLineDash([]); ctx.globalAlpha = 1;
+  }
+  // seta pequena no meio de uma linha, indicando o sentido de E
+  function lineArrowHead(path, color, alpha) {
+    if (path.length < 12) return;
+    const i = Math.floor(path.length * 0.45), a = path[i], b = path[i + 2];
+    const dx = b[0] - a[0], dy = b[1] - a[1], m = Math.hypot(dx, dy); if (!m) return;
+    const ux = dx / m, uy = dy / m, x = X(b[0]), y = Y(b[1]), h = 6;
+    ctx.globalAlpha = alpha; ctx.fillStyle = color; ctx.beginPath(); ctx.moveTo(x, y);
+    ctx.lineTo(x - ux * h - uy * h * 0.5, y - uy * h + ux * h * 0.5); ctx.lineTo(x - ux * h + uy * h * 0.5, y - uy * h - ux * h * 0.5); ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+  }
+  const lab = (px) => "500 " + px + "px IBM Plex Mono, monospace";
+
+  function draw() {
+    if (!calc) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = colors.sheet; ctx.fillRect(0, 0, W * scale, H * scale);
+    for (let g = 0; g <= W * 2; g++) { ctx.strokeStyle = g % 2 ? colors.grid : colors["grid-major"]; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(Math.round(X(g / 2)) + 0.5, 0); ctx.lineTo(Math.round(X(g / 2)) + 0.5, H * scale); ctx.stroke(); }
+    for (let g = 0; g <= H * 2; g++) { ctx.strokeStyle = g % 2 ? colors.grid : colors["grid-major"]; ctx.beginPath(); ctx.moveTo(0, Math.round(Y(g / 2)) + 0.5); ctx.lineTo(W * scale, Math.round(Y(g / 2)) + 0.5); ctx.stroke(); }
+    const step = scale < 45 ? 2 : 1;
+    ctx.fillStyle = colors.muted; ctx.font = "400 " + (scale < 45 ? 9 : 11) + "px IBM Plex Mono, monospace";
+    ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+    for (let gx = step; gx < W; gx += step) ctx.fillText(String(gx), X(gx), H * scale - 2);
+    ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    for (let gy = step; gy < H; gy += step) ctx.fillText(String(gy), 3, Y(H - gy));
+    const S = srcs(), sc = scene();
+    // círculo de contagem
+    if (state.countOn) {
+      const C = state.circ;
+      ctx.fillStyle = colors.region; ctx.strokeStyle = colors.accent; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(X(C.x), Y(C.y), C.r * scale, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+    }
+    // grade de vetores
+    if (state.arrows && S.length) {
+      for (let gx = 0.25; gx < W; gx += 0.5) for (let gy = 0.25; gy < H; gy += 0.5) {
+        if (Phys.nearestSource(gx, gy, sc) < 0.25) continue;
+        const f = Phys.field(gx, gy, S); if (f.mag < 1e-9) continue;
+        const L = 0.4 * (1 - Math.exp(-f.mag / 0.12)), ux = f.ex / f.mag, uy = f.ey / f.mag;
+        arrow(ctx, X(gx - ux * L / 2), Y(gy - uy * L / 2), ux, uy, L * scale, colors.field, 0.35 + 0.5 * (L / 0.4), 1.3, 5);
+      }
+    }
+    // linhas de campo
+    if ((state.lines || state.countOn) && S.length) {
+      for (const p of getLines()) { polyline(p, colors.ink, 1.1, state.lines ? 0.55 : 0.3); lineArrowHead(p, colors.ink, state.lines ? 0.7 : 0.4); }
+    }
+    if (state.countOn && calc.count) {
+      ctx.fillStyle = colors.accent;
+      for (const [x, y] of calc.count.hits) { ctx.beginPath(); ctx.arc(X(x), Y(y), 3.2, 0, 2 * Math.PI); ctx.fill(); }
+      const C = state.circ; ctx.strokeStyle = colors.accent; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.moveTo(X(C.x) - 6, Y(C.y)); ctx.lineTo(X(C.x) + 6, Y(C.y)); ctx.moveTo(X(C.x), Y(C.y) - 6); ctx.lineTo(X(C.x), Y(C.y) + 6); ctx.stroke();
+    }
+    // carga solta: linha pelo ponto de soltura e trajetória
+    if (state.runOn) {
+      if (state.relLine && S.length) { const L = getRelLine(); polyline(L.f, colors.ink, 1.8, 0.9, [6, 5]); polyline(L.b, colors.ink, 1.8, 0.9, [6, 5]); lineArrowHead(L.f, colors.ink, 0.9); }
+      if (run) {
+        const p = run.st.path.map(q => [q[0], q[1]]); p.push([run.st.x, run.st.y]);
+        polyline(p, colors.traj, 3, 0.95);
+      }
+    }
+    // barra
+    if (state.rodOn) {
+      const r = state.rod, col = r.Q >= 0 ? colors.pos : colors.neg, N = Math.round(r.N);
+      ctx.strokeStyle = col; ctx.globalAlpha = 0.3; ctx.lineWidth = Math.max(6, scale * 0.1); ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(X(r.x1), Y(r.y1)); ctx.lineTo(X(r.x2), Y(r.y2)); ctx.stroke(); ctx.globalAlpha = 1;
+      const dr = N <= 10 ? Math.max(5, Math.min(9, scale * 0.12)) : N <= 50 ? 3 : 1.8;
+      ctx.fillStyle = col;
+      for (const c of Phys.rodCharges(r)) { ctx.beginPath(); ctx.arc(X(c.x), Y(c.y), dr, 0, 2 * Math.PI); ctx.fill(); }
+      for (const [x, y, t] of [[r.x1, r.y1, "A"], [r.x2, r.y2, "B"]]) {
+        ctx.fillStyle = colors.sheet; ctx.strokeStyle = colors.accent; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.arc(X(x), Y(y), Math.max(4, Math.min(6, scale * 0.09)), 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+        ctx.fillStyle = colors.muted; ctx.font = lab(scale < 45 ? 10 : 12); ctx.textAlign = "center"; ctx.textBaseline = "bottom"; ctx.fillText(t, X(x), Y(y) - 9);
+      }
+      const mx = (r.x1 + r.x2) / 2, my = (r.y1 + r.y2) / 2;
+      ctx.fillStyle = colors.ink; ctx.font = lab(scale < 45 ? 10 : 12); ctx.textAlign = "center"; ctx.textBaseline = "top";
+      ctx.fillText("Q=" + signed(r.Q, 1) + "  N=" + N, X(mx), Y(my) + 10);
+    }
+    // cargas pontuais
+    state.charges.forEach((c, i) => {
+      const col = c.q > 0 ? colors.pos : c.q < 0 ? colors.neg : colors.muted;
+      const r = Math.max(7, Math.min(18, (0.17 + 0.03 * Math.abs(c.q)) * scale));
+      if (i === state.sel) { ctx.strokeStyle = colors.ink; ctx.lineWidth = 2; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.arc(X(c.x), Y(c.y), r + 5, 0, 2 * Math.PI); ctx.stroke(); ctx.setLineDash([]); }
+      ctx.fillStyle = col; ctx.beginPath(); ctx.arc(X(c.x), Y(c.y), r, 0, 2 * Math.PI); ctx.fill();
+      ctx.fillStyle = colors.sheet; ctx.font = "600 " + Math.round(Math.max(11, Math.min(15, r * 1.2))) + "px IBM Plex Sans, system-ui, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(c.q > 0 ? "+" : c.q < 0 ? "−" : "0", X(c.x), Y(c.y) + 1);
+      ctx.fillStyle = colors.ink; ctx.font = lab(scale < 45 ? 10 : 12);
+      ctx.fillText("q=" + signed(c.q, 1), X(c.x), Y(c.y) + r + 12);
+    });
+    // ponto de soltura e carga em movimento
+    if (state.runOn) {
+      const x = X(state.rel.x), y = Y(state.rel.y), s = Math.max(7, Math.min(10, scale * 0.13));
+      ctx.strokeStyle = colors.traj; ctx.fillStyle = colors.sheet; ctx.lineWidth = 2.5;
+      ctx.beginPath(); ctx.moveTo(x, y - s); ctx.lineTo(x + s, y); ctx.lineTo(x, y + s); ctx.lineTo(x - s, y); ctx.closePath(); ctx.fill(); ctx.stroke();
+      if (!run && state.v0 > 0) { const a = state.v0a * Math.PI / 180; arrow(ctx, x, y, Math.cos(a), -Math.sin(a), Math.max(10, state.v0 * 0.9 * scale), colors.traj, 0.9, 2, 7); }
+      if (run) {
+        const px = X(run.st.x), py = Y(run.st.y), rr = Math.max(6, Math.min(9, scale * 0.11));
+        ctx.fillStyle = colors.traj; ctx.beginPath(); ctx.arc(px, py, rr, 0, 2 * Math.PI); ctx.fill();
+        ctx.fillStyle = colors.sheet; ctx.font = "600 11px IBM Plex Sans, system-ui, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+        ctx.fillText(state.qt > 0 ? "+" : state.qt < 0 ? "−" : "0", px, py + 1);
+      }
+    }
+    // sonda
+    if (state.probeOn) {
+      const tx = X(state.probe.x), ty = Y(state.probe.y), rr = Math.max(9, Math.min(13, scale * 0.16)), f = calc.E;
+      if (f.mag > 1e-9) { const ux = f.ex / f.mag, uy = f.ey / f.mag; arrow(ctx, tx + ux * (rr + 2), ty + uy * (rr + 2), ux, uy, Math.max(8, 1.6 * (1 - Math.exp(-f.mag / 0.4)) * scale), colors.accent, 1, 4, 13); }
+      ctx.fillStyle = colors.sheet; ctx.strokeStyle = colors.ink; ctx.lineWidth = 2.5; ctx.globalAlpha = 0.9;
+      ctx.beginPath(); ctx.arc(tx, ty, rr, 0, 2 * Math.PI); ctx.stroke(); ctx.globalAlpha = 1;
+      ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(tx - rr + 3, ty); ctx.lineTo(tx + rr - 3, ty); ctx.moveTo(tx, ty - rr + 3); ctx.lineTo(tx, ty + rr - 3); ctx.stroke();
+    }
+    // escala
+    ctx.strokeStyle = colors.ink; ctx.lineWidth = 2; const sx = W * scale - X(1) - 14, sy = H * scale - 18;
+    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + X(1), sy); ctx.moveTo(sx, sy - 4); ctx.lineTo(sx, sy + 4); ctx.moveTo(sx + X(1), sy - 4); ctx.lineTo(sx + X(1), sy + 4); ctx.stroke();
+    ctx.fillStyle = colors.ink; ctx.font = lab(12); ctx.textAlign = "center"; ctx.textBaseline = "bottom"; ctx.fillText("1 u", sx + X(1) / 2, sy - 5);
+  }
+
+  // ---------- painel ----------
+  function panelRun() {
+    recordAvailability();
+    if (!state.runOn) return;
+    const st = run ? run.st : null;
+    if (!st) {
+      $("rT").textContent = fmt(0, 3);
+      const K0 = 0.5 * state.m * state.v0 * state.v0, U0 = state.qt * Phys.potential(state.rel.x, state.rel.y, srcs());
+      $("rK").textContent = fmt(K0, 6); $("rU").textContent = fmt(U0, 6); $("rKU").textContent = fmt(K0 + U0, 6); $("rDE").textContent = "—";
+      $("rStat").textContent = "pronta no ponto " + pos(state.rel.x, state.rel.y);
+      return;
+    }
+    $("rT").textContent = fmt(st.t, 3);
+    $("rK").textContent = fmt(st.K, 6); $("rU").textContent = fmt(st.U, 6);
+    $("rKU").textContent = fmt(st.E, 6) + " (" + fmt(st.E0, 6) + ")";
+    const sc = Math.max(Math.abs(st.E0), st.K, Math.abs(st.U0), 1e-12);
+    $("rDE").textContent = sci(st.maxDE / sc, 1);
+    $("rStat").textContent = st.stopped === "fonte" ? "parou a 0,15 u de uma fonte" : st.stopped === "borda" ? "saiu da prancheta" : st.stopped === "tempo" ? "tempo máximo atingido" : running ? "em movimento" : "pausada";
+  }
+  function panel() {
+    const E = calc.E;
+    $("gProbe").hidden = !state.probeOn; $("probeOff").hidden = state.probeOn;
+    $("rE").textContent = fmt(E.mag); $("rEx").textContent = fmt(E.ex); $("rEy").textContent = fmt(-E.ey);
+    $("rAng").textContent = E.mag > 1e-12 ? deg(Math.atan2(-E.ey, E.ex)) : "—";
+    $("rPos").textContent = pos(state.probe.x, state.probe.y);
+    $("gRod").hidden = !state.rodOn; $("cRod").hidden = !state.rodOn;
+    if (state.rodOn) {
+      $("rRodN").textContent = fmt(calc.rodN.mag); $("rRodA").textContent = fmt(calc.rodA.mag);
+      $("rRodErr").textContent = sci(calc.rodErr, 2);
+      const g = calc.rodA.g; $("rRodGeo").textContent = fmt(g.d, 2) + "; " + fmt(g.alfaA * 180 / Math.PI, 1) + "°; " + fmt(g.alfaB * 180 / Math.PI, 1) + "°";
+    }
+    $("gRun").hidden = !state.runOn; $("cRun").hidden = !state.runOn; panelRun();
+    $("gCount").hidden = !state.countOn; $("cCount").hidden = !state.countOn;
+    if (state.countOn) {
+      const c = calc.count; $("rCn").textContent = String(c.n); $("rCr").textContent = fmt(state.circ.r, 2) + " u";
+      $("rCd").textContent = fmt(c.dens, 3); $("rCe").textContent = fmt(c.Emean, 4);
+    }
+    const msgs = [];
+    if (!srcs().length) msgs.push("Não há fontes na prancheta; acrescente uma carga ou ligue a barra.");
+    if (state.probeOn && calc.dProbe < 0.12) msgs.push("A sonda está a menos de 0,12 u de uma fonte; ali o campo de uma carga pontual cresce sem limite e o valor perde sentido físico.");
+    if (state.rodOn && state.probeOn) {
+      const h = calc.rodL / Math.round(state.rod.N);
+      if (calc.rodDseg < 0.02) msgs.push("A sonda está sobre a barra contínua, onde a expressão analítica diverge.");
+      else if (calc.rodDseg < h) msgs.push("A sonda está mais perto da barra do que o espaçamento L/N = " + fmt(h, 2) + " u entre as cargas; nessa região a soma discreta ainda não se parece com a barra contínua.");
+    }
+    if (state.countOn && !state.lines) msgs.push("A contagem usa as linhas de campo, mostradas em tom claro enquanto a opção linhas de campo estiver desligada.");
+    $("warn").hidden = !msgs.length; $("warn").textContent = msgs.join(" ");
+    const c = state.charges[state.sel];
+    $("qBox").hidden = !c; $("noCharge").hidden = !!c;
+    if (c) { $("qSrc").value = c.q; $("qOut").textContent = signed(c.q, 1) + " q₀"; }
+    $("lpq").value = state.lpq; $("lpqOut").textContent = String(state.lpq);
+    document.querySelectorAll("#legend [data-k]").forEach(el => { const k = el.dataset.k; el.hidden = !(k === "arrows" ? state.arrows : k === "lines" ? state.lines || state.countOn : k === "probe" ? state.probeOn : state.runOn); });
+    recordAvailability();
+  }
+  function syncControls() {
+    $("qt").value = state.qt; $("qtOut").textContent = signed(state.qt, 1) + " q₀";
+    $("mass").value = state.m; $("mOut").textContent = fmt(state.m, 1) + " m₀";
+    $("v0").value = state.v0; $("v0Out").textContent = fmt(state.v0, 2) + " u/τ";
+    $("v0a").value = state.v0a; $("v0aOut").textContent = state.v0a + "°";
+    const r = state.rod, L = Math.hypot(r.x2 - r.x1, r.y2 - r.y1);
+    $("nRod").value = Math.max(0, N_STEPS.indexOf(Math.round(r.N))); $("nRodOut").textContent = String(Math.round(r.N));
+    $("qRod").value = r.Q; $("qRodOut").textContent = signed(r.Q, 1) + " q₀";
+    $("lRod").value = Math.round(L * 2) / 2; $("lRodOut").textContent = fmt(L, 2) + " u";
+    $("rC").value = state.circ.r; $("rCOut").textContent = fmt(state.circ.r, 2) + " u";
+    $("optRelLine").checked = state.relLine;
+  }
+
+  function update() { recompute(); draw(); panel(); }
+  function sceneChanged() { dirty(); if (run) { stopRun(); run = null; } update(); }
+
+  // ---------- interação ----------
+  function toWorld(e) { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) / scale, y: (e.clientY - r.top) / scale }; }
+  const snapv = v => state.snap ? Math.round(v * 10) / 10 : v;
+  const clampX = x => snapv(Math.max(0.1, Math.min(W - 0.1, x))), clampY = y => snapv(Math.max(0.1, Math.min(H - 0.1, y)));
+  let drag = null;
+  function pick(p, hr) {
+    const cands = [];
+    if (state.probeOn) cands.push({ kind: "probe", d: Math.hypot(state.probe.x - p.x, state.probe.y - p.y) });
+    if (state.runOn) cands.push({ kind: "rel", d: Math.hypot(state.rel.x - p.x, state.rel.y - p.y) });
+    state.charges.forEach((c, i) => cands.push({ kind: "charge", i, d: Math.hypot(c.x - p.x, c.y - p.y) }));
+    if (state.rodOn) { const r = state.rod; cands.push({ kind: "end", e: 1, d: Math.hypot(r.x1 - p.x, r.y1 - p.y) }, { kind: "end", e: 2, d: Math.hypot(r.x2 - p.x, r.y2 - p.y) }); }
+    if (state.countOn) cands.push({ kind: "circ", d: Math.hypot(state.circ.x - p.x, state.circ.y - p.y) });
+    let best = null; for (const c of cands) if (c.d < hr && (!best || c.d < best.d)) best = c;
+    if (!best && state.rodOn) { const r = state.rod; if (Phys.distToSegment(p.x, p.y, r.x1, r.y1, r.x2, r.y2) < hr * 0.8) best = { kind: "rod", last: p }; }
+    return best;
+  }
+  cv.addEventListener("pointerdown", e => {
+    const p = toWorld(e), hr = e.pointerType === "touch" ? 0.5 : 0.3, best = pick(p, hr);
+    if (!best) return;
+    if (best.kind === "charge") state.sel = best.i;
+    if (best.kind === "rod") best.last = p;
+    drag = best; try { cv.setPointerCapture(e.pointerId); } catch (err) {} cv.className = "grabbing"; e.preventDefault(); cv.focus({ preventScroll: true }); update();
+  });
+  cv.addEventListener("pointermove", e => {
+    const p = toWorld(e);
+    if (!drag) { cv.className = pick(p, 0.3) ? "grab" : ""; return; }
+    const x = clampX(p.x), y = clampY(p.y);
+    if (drag.kind === "probe") { state.probe = { x, y }; update(); return; }
+    if (drag.kind === "rel") { state.rel = { x, y }; cache.relLine = null; if (run) { stopRun(); run = null; } update(); return; }
+    if (drag.kind === "circ") { state.circ.x = x; state.circ.y = y; update(); return; }
+    if (drag.kind === "charge") { state.charges[drag.i].x = x; state.charges[drag.i].y = y; }
+    else if (drag.kind === "end") {
+      const r = state.rod, ox = drag.e === 1 ? r.x2 : r.x1, oy = drag.e === 1 ? r.y2 : r.y1;
+      if (Math.hypot(x - ox, y - oy) >= 0.5) { if (drag.e === 1) { r.x1 = x; r.y1 = y; } else { r.x2 = x; r.y2 = y; } }
+      syncControls();
+    } else if (drag.kind === "rod") {
+      const r = state.rod; let dx = p.x - drag.last.x, dy = p.y - drag.last.y;
+      dx = Math.max(0.1 - Math.min(r.x1, r.x2), Math.min(W - 0.1 - Math.max(r.x1, r.x2), dx));
+      dy = Math.max(0.1 - Math.min(r.y1, r.y2), Math.min(H - 0.1 - Math.max(r.y1, r.y2), dy));
+      r.x1 += dx; r.x2 += dx; r.y1 += dy; r.y2 += dy; drag.last = { x: drag.last.x + dx, y: drag.last.y + dy };
+    }
+    sceneChanged();
+  });
+  const endDrag = () => {
+    if (drag && drag.kind === "rod" && state.snap) { const r = state.rod, sx = Math.round(r.x1 * 10) / 10 - r.x1, sy = Math.round(r.y1 * 10) / 10 - r.y1; r.x1 += sx; r.x2 += sx; r.y1 += sy; r.y2 += sy; sceneChanged(); }
+    if (drag && drag.kind === "circ") { let b = null, bd = 0.35; for (const c of state.charges) { const d = Math.hypot(c.x - state.circ.x, c.y - state.circ.y); if (d < bd) { bd = d; b = c; } } if (b) { state.circ.x = b.x; state.circ.y = b.y; update(); } }
+    drag = null; cv.className = "";
+  };
+  cv.addEventListener("pointerup", endDrag); cv.addEventListener("pointercancel", endDrag);
+  cv.addEventListener("keydown", e => {
+    const d = e.shiftKey ? 1 : 0.1, m = { ArrowLeft: [-d, 0], ArrowRight: [d, 0], ArrowUp: [0, -d], ArrowDown: [0, d] }[e.key];
+    if (!m) return;
+    e.preventDefault();
+    if (state.probeOn) { state.probe = { x: clampX(state.probe.x + m[0]), y: clampY(state.probe.y + m[1]) }; update(); }
+    else if (state.runOn) { state.rel = { x: clampX(state.rel.x + m[0]), y: clampY(state.rel.y + m[1]) }; cache.relLine = null; if (run) { stopRun(); run = null; } update(); }
+  });
+
+  function addCharge(q) {
+    let x, y, tries = 0;
+    do { x = Math.round(10 * (1 + Math.random() * (W - 2))) / 10; y = Math.round(10 * (1 + Math.random() * (H - 2))) / 10; tries++; }
+    while (tries < 60 && (Phys.nearestSource(x, y, scene()) < 1 || Math.hypot(x - state.probe.x, y - state.probe.y) < 0.6));
+    state.charges.push({ x, y, q }); state.sel = state.charges.length - 1; sceneChanged();
+  }
+  $("addPos").onclick = () => addCharge(1);
+  $("addNeg").onclick = () => addCharge(-1);
+  $("delCharge").onclick = () => { if (!state.charges.length) return; state.charges.splice(state.sel, 1); state.sel = Math.max(0, state.sel - 1); sceneChanged(); };
+  $("qSrc").oninput = e => { const c = state.charges[state.sel]; if (c) { c.q = parseFloat(e.target.value); sceneChanged(); } };
+  $("lpq").oninput = e => { state.lpq = parseInt(e.target.value, 10); cache.lines = null; update(); };
+  $("optArrows").onchange = e => { state.arrows = e.target.checked; update(); };
+  $("optLines").onchange = e => { state.lines = e.target.checked; update(); };
+  $("optProbe").onchange = e => { state.probeOn = e.target.checked; update(); };
+  $("optRun").onchange = e => { state.runOn = e.target.checked; if (!state.runOn) resetRun(); update(); };
+  $("optRod").onchange = e => { state.rodOn = e.target.checked; if (state.rodOn && !state.probeOn) setTool("probeOn", "optProbe", true); syncControls(); sceneChanged(); };
+  $("optCount").onchange = e => { state.countOn = e.target.checked; if (state.countOn && !state.lines) setTool("lines", "optLines", true); update(); };
+  $("optSnap").onchange = e => { state.snap = e.target.checked; };
+  $("optRelLine").onchange = e => { state.relLine = e.target.checked; draw(); };
+  const runParam = (id, key) => { $(id).oninput = e => { state[key] = parseFloat(e.target.value); syncControls(); if (run) { stopRun(); run = null; } draw(); panelRun(); }; };
+  runParam("qt", "qt"); runParam("mass", "m"); runParam("v0", "v0"); runParam("v0a", "v0a");
+  $("go").onclick = () => {
+    if (!state.runOn) return;
+    if (Math.abs(state.qt) < 1e-9 && state.v0 === 0) { $("rStat").textContent = "com q_t = 0 e v₀ = 0 a carga fica parada"; return; }
+    if (!run || run.st.stopped) newRun();
+    if (run.st.stopped) { panelRun(); draw(); return; }
+    running = true; $("pause").disabled = false; $("pause").textContent = "Pausar";
+    cancelAnimationFrame(rafId); rafId = requestAnimationFrame(tick);
+  };
+  $("pause").onclick = () => {
+    if (!run) return;
+    if (running) { running = false; cancelAnimationFrame(rafId); $("pause").textContent = "Continuar"; panelRun(); }
+    else if (!run.st.stopped) { running = true; $("pause").textContent = "Pausar"; rafId = requestAnimationFrame(tick); }
+  };
+  $("resetRun").onclick = resetRun;
+  $("nRod").oninput = e => { state.rod.N = N_STEPS[parseInt(e.target.value, 10)]; syncControls(); sceneChanged(); };
+  $("qRod").oninput = e => { state.rod.Q = parseFloat(e.target.value); syncControls(); sceneChanged(); };
+  $("lRod").oninput = e => {
+    const r = state.rod, L = parseFloat(e.target.value), cx = (r.x1 + r.x2) / 2, cy = (r.y1 + r.y2) / 2, L0 = Math.hypot(r.x2 - r.x1, r.y2 - r.y1) || 1;
+    const ux = (r.x2 - r.x1) / L0, uy = (r.y2 - r.y1) / L0;
+    r.x1 = cx - ux * L / 2; r.x2 = cx + ux * L / 2; r.y1 = cy - uy * L / 2; r.y2 = cy + uy * L / 2;
+    syncControls(); sceneChanged();
+  };
+  $("rC").oninput = e => { state.circ.r = parseFloat(e.target.value); syncControls(); update(); };
+
+  situations.forEach((s, i) => { const b = document.createElement("button"); b.type = "button"; b.textContent = "S" + (i + 1); b.title = s.title; b.onclick = () => loadSituation(i); $("sitTabs").appendChild(b); });
+
+  // ---------- registro ----------
+  const KINDS = {
+    probe: { name: "Sonda", head: ["#", "Sit.", "x", "y", "|E|", "Eₓ", "E_y", "direção"],
+      csv: "medida;situacao;x;y;E;Ex;Ey;direcao_graus",
+      row: r => [r.k, "S" + r.sit, fmt(r.x, 2), fmt(r.y, 2), sig(r.E), sig(r.Ex), sig(r.Ey), deg(r.ang)],
+      csvRow: r => [r.k, r.sit, fmt(r.x, 2), fmt(r.y, 2), sciCsv(r.E), sciCsv(r.Ex), sciCsv(r.Ey), fmt((r.ang * 180 / Math.PI + 360) % 360, 2)] },
+    run: { name: "Carga solta", head: ["#", "Sit.", "q_t", "m", "|v₀|", "x₀", "y₀", "t", "x", "y", "K", "K + U", "ΔE rel."],
+      csv: "medida;situacao;q_t;m;v0;direcao_v0_graus;x0;y0;t;x;y;K;U;K_mais_U;K_mais_U_inicial;variacao_relativa_max;situacao_da_carga",
+      row: r => [r.k, "S" + r.sit, signed(r.qt, 1), fmt(r.m, 1), fmt(r.v0, 2), fmt(r.x0, 2), fmt(r.y0, 2), fmt(r.t, 3), fmt(r.x, 2), fmt(r.y, 2), fmt(r.K, 4), fmt(r.E, 4), sci(r.dE, 1)],
+      csvRow: r => [r.k, r.sit, fmt(r.qt, 1), fmt(r.m, 1), fmt(r.v0, 2), r.v0a, fmt(r.x0, 2), fmt(r.y0, 2), fmt(r.t, 4), fmt(r.x, 4), fmt(r.y, 4), sciCsv(r.K), sciCsv(r.U), sciCsv(r.E), sciCsv(r.E0), sciCsv(r.dE), r.stat] },
+    rod: { name: "Barra", head: ["#", "Sit.", "N", "x", "y", "|E| soma", "|E| contínua", "erro rel."],
+      csv: "medida;situacao;N;Q;L;x_sonda;y_sonda;E_soma_N;E_continua;erro_relativo",
+      row: r => [r.k, "S" + r.sit, r.N, fmt(r.x, 2), fmt(r.y, 2), sig(r.EN, 6), sig(r.EA, 6), sci(r.err, 2)],
+      csvRow: r => [r.k, r.sit, r.N, fmt(r.Q, 1), fmt(r.L, 2), fmt(r.x, 2), fmt(r.y, 2), sciCsv(r.EN), sciCsv(r.EA), sciCsv(r.err)] },
+    count: { name: "Contagem", head: ["#", "Sit.", "r", "linhas", "n/(2πr)", "|E| médio", "q no centro"],
+      csv: "medida;situacao;r;cruzamentos;densidade_no_desenho;E_medio_no_circulo;carga_no_centro;linhas_por_unidade_de_carga",
+      row: r => [r.k, "S" + r.sit, fmt(r.r, 2), r.n, fmt(r.dens, 3), sig(r.Em), r.qc == null ? "—" : signed(r.qc, 1)],
+      csvRow: r => [r.k, r.sit, fmt(r.r, 2), r.n, fmt(r.dens, 4), sciCsv(r.Em), r.qc == null ? "" : fmt(r.qc, 1), r.lpq] }
+  };
+  function recordAvailability() {
+    const k = state.kind, need = { probe: state.probeOn, run: state.runOn && !!run, rod: state.rodOn && state.probeOn, count: state.countOn }[k];
+    const why = { probe: "Ligue a sonda para registrar.", run: state.runOn ? "Solte a carga para registrar o lançamento." : "Ligue a carga solta para registrar.", rod: "Ligue a barra e a sonda para registrar.", count: "Ligue o círculo de contagem para registrar." }[k];
+    $("record").disabled = !need; $("recHint").hidden = !!need; $("recHint").textContent = need ? "" : why;
+  }
+  function renderRecords() {
+    const K = KINDS[state.kind];
+    $("recHead").innerHTML = "<tr>" + K.head.map(h => "<th>" + h.replace("ₓ", "<sub>x</sub>").replace("E_y", "E<sub>y</sub>").replace("q_t", "q<sub>t</sub>") + "</th>").join("") + "</tr>";
+    const rows = state.records.filter(r => r.kind === state.kind), tb = $("recBody");
+    if (!rows.length) tb.innerHTML = '<tr><td colspan="' + K.head.length + '" style="text-align:left;font-family:var(--body);color:var(--muted);white-space:normal">Nenhuma medida deste tipo registrada. Faça uma previsão, ajuste a bancada e toque em Registrar medida.</td></tr>';
+    else {
+      tb.innerHTML = "";
+      rows.forEach(r => { const tr = document.createElement("tr"); K.row(r).forEach(v => { const td = document.createElement("td"); td.textContent = v; tr.appendChild(td); }); tb.appendChild(tr); });
+      tb.parentElement.parentElement.scrollTop = 1e6;
+    }
+    $("fitBlock").hidden = state.kind !== "rod";
+    recordAvailability(); drawFit();
+  }
+  $("kindSel").onchange = e => { state.kind = e.target.value; renderRecords(); };
+  $("record").onclick = () => {
+    const base = { kind: state.kind, k: state.records.filter(r => r.kind === state.kind).length + 1, sit: state.sit + 1 };
+    const P = state.probe;
+    if (state.kind === "probe" && state.probeOn) state.records.push({ ...base, x: P.x, y: H - P.y, E: calc.E.mag, Ex: calc.E.ex, Ey: -calc.E.ey, ang: Math.atan2(-calc.E.ey, calc.E.ex) });
+    else if (state.kind === "rod" && state.rodOn) { const r = state.rod; state.records.push({ ...base, N: Math.round(r.N), Q: r.Q, L: calc.rodL, x: P.x, y: H - P.y, EN: calc.rodN.mag, EA: calc.rodA.mag, err: calc.rodErr, sigKey: [P.x, P.y, r.x1, r.y1, r.x2, r.y2, r.Q].map(v => v.toFixed(3)).join("|") }); }
+    else if (state.kind === "run" && run) { const st = run.st, sc = Math.max(Math.abs(st.E0), st.K, Math.abs(st.U0), 1e-12);
+      state.records.push({ ...base, qt: state.qt, m: state.m, v0: state.v0, v0a: state.v0a, x0: state.rel.x, y0: H - state.rel.y, t: st.t, x: st.x, y: H - st.y, K: st.K, U: st.U, E: st.E, E0: st.E0, dE: st.maxDE / sc, stat: st.stopped || (running ? "em movimento" : "pausada") }); }
+    else if (state.kind === "count" && state.countOn) { const C = state.circ, ch = state.charges.find(c => Math.hypot(c.x - C.x, c.y - C.y) < 1e-6);
+      state.records.push({ ...base, r: C.r, n: calc.count.n, dens: calc.count.dens, Em: calc.count.Emean, qc: ch ? ch.q : null, lpq: state.lpq }); }
+    else return;
+    renderRecords();
+  };
+  $("clearRec").onclick = () => { state.records = []; renderRecords(); $("csvBox").hidden = true; $("copyMsg").hidden = true; };
+  function csv() {
+    const blocks = [];
+    for (const k of Object.keys(KINDS)) {
+      const rows = state.records.filter(r => r.kind === k); if (!rows.length) continue;
+      blocks.push(["# " + KINDS[k].name, KINDS[k].csv, ...rows.map(r => KINDS[k].csvRow(r).join(";"))].join("\n"));
+    }
+    return blocks.length ? blocks.join("\n\n") : "# nenhuma medida registrada";
+  }
+  $("copyCsv").onclick = () => {
+    const text = csv(), box = $("csvBox"), msg = $("copyMsg");
+    const fallback = () => { box.value = text; box.hidden = false; box.focus(); box.select(); msg.hidden = false; msg.textContent = "Selecione o texto abaixo e copie (Ctrl+C ou toque longo)."; };
+    try {
+      navigator.clipboard.writeText(text).then(() => { msg.hidden = false; msg.textContent = "Tabelas copiadas, uma por tipo de medida. Cole numa planilha; as colunas são separadas por ponto e vírgula."; box.hidden = true; }, fallback);
+    } catch (err) { fallback(); }
+  };
+
+  // ---------- gráfico log-log do erro da barra ----------
+  function niceStep(span) { const raw = span / 4, p = Math.pow(10, Math.floor(Math.log10(raw))), m = raw / p; return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * p; }
+  function fitRows() {
+    const all = state.records.filter(r => r.kind === "rod" && r.err > 0);
+    if (!all.length) return { rows: [], excl: 0 };
+    const key = all[all.length - 1].sigKey, rows = all.filter(r => r.sigKey === key);
+    return { rows, excl: all.length - rows.length };
+  }
+  function drawFit() {
+    if ($("fitBlock").hidden) return;
+    const fw = fcv.parentElement.clientWidth, fh = Math.round(Math.min(220, fw * 0.62));
+    if (fw && Math.round(fw * dpr) !== fcv.width) { fcv.width = Math.round(fw * dpr); fcv.height = Math.round(fh * dpr); fcv.style.height = fh + "px"; }
+    const { rows, excl } = fitRows(), fit = Phys.fitLogLog(rows.map(r => r.N), rows.map(r => r.err));
+    const w = fcv.width / dpr, h = fcv.height / dpr, ml = 44, mr = 10, mt = 10, mb = 34;
+    fctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    fctx.fillStyle = colors.paper; fctx.fillRect(0, 0, w, h);
+    let x0 = 0, x1 = 2.4, y0 = -7, y1 = 0;
+    if (fit.xs.length) {
+      x0 = Math.min(...fit.xs); x1 = Math.max(...fit.xs); y0 = Math.min(...fit.ys); y1 = Math.max(...fit.ys);
+      const px = Math.max(0.1, (x1 - x0) * 0.08), py = Math.max(0.1, (y1 - y0) * 0.08);
+      x0 -= px; x1 += px; y0 -= py; y1 += py;
+    }
+    const PX = v => ml + (v - x0) / (x1 - x0) * (w - ml - mr), PY = v => h - mb - (v - y0) / (y1 - y0) * (h - mt - mb);
+    fctx.font = "400 10px IBM Plex Mono, monospace"; fctx.lineWidth = 1;
+    const sx = niceStep(x1 - x0), sy = niceStep(y1 - y0), dx = sx < 0.1 ? 2 : 1, dy = sy < 0.1 ? 2 : sy < 1 ? 1 : 0;
+    fctx.textAlign = "center"; fctx.textBaseline = "top";
+    for (let v = Math.ceil(x0 / sx) * sx; v <= x1 + 1e-9; v += sx) { fctx.strokeStyle = colors.grid; fctx.beginPath(); fctx.moveTo(Math.round(PX(v)) + 0.5, mt); fctx.lineTo(Math.round(PX(v)) + 0.5, h - mb); fctx.stroke(); fctx.fillStyle = colors.muted; fctx.fillText(fmt(v, dx), PX(v), h - mb + 3); }
+    fctx.textAlign = "right"; fctx.textBaseline = "middle";
+    for (let v = Math.ceil(y0 / sy) * sy; v <= y1 + 1e-9; v += sy) { fctx.strokeStyle = colors.grid; fctx.beginPath(); fctx.moveTo(ml, Math.round(PY(v)) + 0.5); fctx.lineTo(w - mr, Math.round(PY(v)) + 0.5); fctx.stroke(); fctx.fillStyle = colors.muted; fctx.fillText(fmt(v, dy), ml - 4, PY(v)); }
+    fctx.strokeStyle = colors.rule; fctx.strokeRect(ml + 0.5, mt + 0.5, w - ml - mr - 1, h - mt - mb - 1);
+    fctx.fillStyle = colors.muted; fctx.textAlign = "center"; fctx.textBaseline = "bottom"; fctx.font = "500 11px IBM Plex Mono, monospace";
+    fctx.fillText("log₁₀ N", ml + (w - ml - mr) / 2, h - 1);
+    fctx.save(); fctx.translate(11, mt + (h - mt - mb) / 2); fctx.rotate(-Math.PI / 2); fctx.textBaseline = "middle"; fctx.fillText("log₁₀ erro", 0, 0); fctx.restore();
+    if (fit.ok) {
+      fctx.strokeStyle = colors.accent; fctx.lineWidth = 2;
+      fctx.save(); fctx.beginPath(); fctx.rect(ml, mt, w - ml - mr, h - mt - mb); fctx.clip();
+      fctx.beginPath(); fctx.moveTo(PX(x0), PY(fit.intercept + fit.slope * x0)); fctx.lineTo(PX(x1), PY(fit.intercept + fit.slope * x1)); fctx.stroke(); fctx.restore();
+    }
+    fit.xs.forEach((x, i) => { fctx.fillStyle = colors.ink; fctx.beginPath(); fctx.arc(PX(x), PY(fit.ys[i]), 3.5, 0, 2 * Math.PI); fctx.fill(); });
+    if (fit.ok) $("fitOut").innerHTML = "inclinação = <b>" + fmt(fit.slope, 3) + (isFinite(fit.se) ? " ± " + fmt(fit.se, 3) : "") + "</b> · " + fit.N + " pontos";
+    else if (fit.degenerate) $("fitOut").textContent = "Todos os pontos têm o mesmo N; varie N. Pontos: " + fit.N;
+    else $("fitOut").textContent = "Registre ao menos dois valores de N para ver o ajuste (pontos: " + fit.N + ").";
+    const notes = ["A reta é o ajuste de mínimos quadrados de log₁₀ do erro relativo contra log₁₀ N; a incerteza é o erro padrão da inclinação."];
+    if (excl) notes.push(excl + " medida(s) feita(s) com outra posição da sonda ou outra barra ficaram fora do ajuste, que usa só as medidas na mesma configuração da última registrada.");
+    $("fitNote").textContent = notes.join(" ");
+  }
+
+  // ---------- teste de verificação ao carregar ----------
+  (function selfTest() {
+    const a = Phys.field(8, 4, [{ x: 6, y: 4, q: 1 }]).mag;
+    const qd = 1, ad = 1, z = 3, Ed = Phys.field(6 + z, 4, [{ x: 6 + ad, y: 4, q: qd }, { x: 6 - ad, y: 4, q: -qd }]).ex, Edx = 4 * qd * ad * z / (z * z - ad * ad) ** 2;
+    const rod = { x1: 4, y1: 2, x2: 8, y2: 2, Q: 4, N: 200 }, S = Phys.field(6, 6, Phys.rodCharges(rod)), A = Phys.rodFieldExact(6, 6, rod), er = Math.hypot(S.ex - A.ex, S.ey - A.ey) / A.mag;
+    const R = Phys.makeRun({ charges: [{ x: 4, y: 4, q: 1 }, { x: 8, y: 4, q: -1 }] }, 1, 1, 5, 2.5, 0, 0, { bounds: [0, 0, 12, 8] }); R.advance(1e6);
+    const de = R.st.maxDE / Math.max(Math.abs(R.st.E0), R.st.K, Math.abs(R.st.U0));
+    const ok = Math.abs(a - 0.25) < 1e-12 && Math.abs(Ed - Edx) < 1e-12 && er < 1e-4 && de < 1e-6;
+    $("verify").innerHTML = "<span>Teste de verificação ao abrir: <b>" + (ok ? "aprovado" : "reprovado") + "</b></span>" +
+      "<span>q = 1 a r = 2 u: |E| = " + fmt(a, 6) + " (previsto 0,25)</span>" +
+      "<span>dipolo exato, eixo, z = 3 u, a = 1 u: E = " + fmt(Ed, 6) + " (previsto " + fmt(Edx, 6) + ")</span>" +
+      "<span>barra com N = 200 a uma distância L: erro relativo " + sci(er, 1) + " (limite 10⁻⁴)</span>" +
+      "<span>carga solta no dipolo: variação relativa de K + U " + sci(de, 1) + " (limite 10⁻⁶)</span>";
+  })();
+
+  // tema
+  const mq = window.matchMedia("(prefers-color-scheme: dark)");
+  const retheme = () => { readColors(); draw(); drawFit(); };
+  mq.addEventListener ? mq.addEventListener("change", retheme) : mq.addListener(retheme);
+  new MutationObserver(retheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  readColors();
+  loadSituation(0);
+  window.addEventListener("resize", resize);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { draw(); drawFit(); });
+  resize();
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,640 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Laboratório de Gauss</title>
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,'Segoe UI',sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,600&display=swap">
+<style>
+/* Layout: bancada — prancheta quadriculada à esquerda, caderno de medidas à direita; empilha no celular. */
+:root {
+  --paper: #f3f5f6;
+  --sheet: #fbfcfc;
+  --ink: #17232b;
+  --muted: #5a6a74;
+  --grid: #d9e2e7;
+  --grid-major: #c3d0d7;
+  --rule: #d3dce1;
+  --pos: #c2410c;
+  --neg: #1d5fbf;
+  --field: #6d7f8a;
+  --accent: #0f6e6a;
+  --warn-bg: #fff4e0;
+  --warn-ink: #7a4b00;
+  --region: rgba(15, 110, 106, 0.07);
+  --display: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0f171c; --sheet: #142028; --ink: #e3ebef; --muted: #93a5b0;
+    --grid: #1d2c35; --grid-major: #283a45; --rule: #2a3a44;
+    --pos: #f2814f; --neg: #6aa7ff; --field: #8296a2; --accent: #4fc2b8;
+    --warn-bg: #3a2a0d; --warn-ink: #f5c97a; --region: rgba(79, 194, 184, 0.08);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0f171c; --sheet: #142028; --ink: #e3ebef; --muted: #93a5b0;
+  --grid: #1d2c35; --grid-major: #283a45; --rule: #2a3a44;
+  --pos: #f2814f; --neg: #6aa7ff; --field: #8296a2; --accent: #4fc2b8;
+  --warn-bg: #3a2a0d; --warn-ink: #f5c97a; --region: rgba(79, 194, 184, 0.08);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--paper); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 32px;
+}
+.wrap { max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+header { display: flex; flex-direction: column; gap: 6px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--display); font-weight: 600; font-size: clamp(26px, 4vw, 36px); line-height: 1.15; margin: 0; text-wrap: balance; }
+.model { max-width: 78ch; color: var(--muted); margin: 0; }
+.model b { color: var(--ink); font-weight: 600; }
+.bench { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 18px; align-items: start; }
+@media (max-width: 900px) { .bench { grid-template-columns: minmax(0, 1fr); } }
+.board { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.canvas-box { background: var(--sheet); border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; touch-action: none; }
+canvas { display: block; width: 100%; height: auto; cursor: crosshair; }
+canvas.grab { cursor: grab; } canvas.grabbing { cursor: grabbing; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+@media (max-width: 600px) { .toolbar .sep { display: none; } }
+.toolbar .sep { width: 1px; align-self: stretch; background: var(--rule); margin: 0 4px; }
+button, select { font: inherit; font-size: 14px; color: var(--ink); background: var(--sheet); border: 1px solid var(--rule); border-radius: 5px; padding: 6px 11px; cursor: pointer; }
+button:hover { border-color: var(--muted); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--sheet); font-weight: 500; }
+button.pos { color: var(--pos); font-weight: 600; } button.neg { color: var(--neg); font-weight: 600; }
+label.check { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--muted); cursor: pointer; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--muted); }
+.legend span::before { content: ""; display: inline-block; width: 16px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle; background: currentColor; }
+.legend .lo { color: var(--pos); } .legend .li { color: var(--neg); }
+.legend .lo, .legend .li { font-weight: 500; }
+.notebook { background: var(--sheet); border: 1px solid var(--rule); border-radius: 6px; display: flex; flex-direction: column; min-width: 0; }
+.notebook section { padding: 14px 16px; border-top: 1px solid var(--rule); display: flex; flex-direction: column; gap: 10px; }
+.notebook section:first-child { border-top: none; }
+h2 { font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.readout { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: baseline; }
+.readout dt { font-size: 14px; } .readout dd { margin: 0; font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 18px; text-align: right; }
+.readout dd.big { font-size: 26px; font-weight: 500; color: var(--accent); }
+.readout dt small { display: block; color: var(--muted); font-size: 12px; }
+.warn { background: var(--warn-bg); color: var(--warn-ink); border-radius: 5px; padding: 8px 10px; font-size: 13px; }
+.sit-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.sit-tabs button { font-family: var(--mono); font-size: 13px; padding: 4px 10px; }
+.sit-tabs button[aria-pressed="true"] { background: var(--ink); color: var(--sheet); border-color: var(--ink); }
+.sit-title { font-weight: 600; margin: 0; }
+.sit-text { margin: 0; font-size: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.slider { display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.slider .top { display: flex; justify-content: space-between; gap: 8px; }
+.slider output { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+.hint { font-size: 12px; color: var(--muted); margin: 0; }
+.table-box { overflow-x: auto; max-height: 260px; overflow-y: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 4px 6px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+th:nth-child(2), td:nth-child(2), th:nth-child(4), td:nth-child(4) { text-align: left; }
+th { font-weight: 500; color: var(--muted); font-size: 12px; position: sticky; top: 0; background: var(--sheet); }
+td { font-family: var(--mono); }
+textarea { width: 100%; min-height: 90px; font-family: var(--mono); font-size: 12px; background: var(--paper); color: var(--ink); border: 1px solid var(--rule); border-radius: 5px; padding: 6px; }
+.verify { font-family: var(--mono); font-size: 12px; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 12px; display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.verify b { color: var(--accent); font-weight: 500; }
+footer { font-size: 12px; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Eletromagnetismo · Tomo I · Módulo 3 · Laboratório 3</div>
+    <h1>Lei de Gauss no plano</h1>
+    <p class="model"><b>Modelo.</b> Cada carga é um fio infinito, perpendicular à tela, com densidade linear λ (em unidades de λ₀), e a curva é o corte de uma superfície cilíndrica fechada. O laboratório soma <b>E·n̂ ds</b> ao longo da curva e mostra o fluxo por unidade de comprimento, em λ₀/ε₀. Neste corte o campo de um fio decai como 1/r, que é o análogo exato de 1/r² em três dimensões; o controle de expoente permite trocar essa lei por outra que não existe na natureza.</p>
+  </header>
+
+  <div class="bench">
+    <div class="board">
+      <div class="toolbar" role="toolbar" aria-label="Ferramentas da bancada">
+        <button class="pos" id="addPos" type="button">+ carga positiva</button>
+        <button class="neg" id="addNeg" type="button">− carga negativa</button>
+        <span class="sep" aria-hidden="true"></span>
+        <label class="check" for="shapeSel">Superfície
+          <select id="shapeSel">
+            <option value="circle">Círculo</option>
+            <option value="square">Quadrado</option>
+            <option value="ellipse">Elipse</option>
+            <option value="potato">Irregular</option>
+          </select>
+        </label>
+        <span class="sep" aria-hidden="true"></span>
+        <label class="check" for="optArrows"><input type="checkbox" id="optArrows" checked> vetores</label>
+        <label class="check" for="optLines"><input type="checkbox" id="optLines"> linhas de campo</label>
+        <label class="check" for="optNormals"><input type="checkbox" id="optNormals"> normais</label>
+        <label class="check" for="optHandles"><input type="checkbox" id="optHandles" checked> pontos de controle</label>
+      </div>
+      <div class="canvas-box"><canvas id="cv" aria-label="Plano com cargas, campo elétrico e superfície gaussiana. Arraste cargas, pontos de controle ou o interior da curva."></canvas></div>
+      <div class="legend" aria-label="Legenda">
+        <span class="lo">fluxo saindo da superfície</span>
+        <span class="li">fluxo entrando na superfície</span>
+        <span style="color:var(--field)">vetor E (comprimento comprimido)</span>
+      </div>
+      <p class="hint">Arraste uma carga para movê-la, um ponto de controle para deformar a superfície, ou o interior da curva para deslocá-la inteira. Toque numa carga para ajustar λ.</p>
+    </div>
+
+    <aside class="notebook" aria-label="Caderno de medidas">
+      <section aria-labelledby="h-read">
+        <h2 id="h-read">Medida</h2>
+        <dl class="readout">
+          <dt>Φ medido<small>soma numérica de E·n̂ ds</small></dt><dd class="big" id="rPhi">—</dd>
+          <dt>λ envolvida / ε₀<small>previsão da lei de Gauss</small></dt><dd id="rQ">—</dd>
+          <dt>Diferença</dt><dd id="rDiff">—</dd>
+        </dl>
+        <div class="warn" id="warn" hidden></div>
+      </section>
+
+      <section aria-labelledby="h-sit">
+        <h2 id="h-sit">Situações</h2>
+        <div class="sit-tabs" id="sitTabs"></div>
+        <p class="sit-title" id="sitTitle"></p>
+        <p class="sit-text" id="sitText"></p>
+      </section>
+
+      <section aria-labelledby="h-ctrl">
+        <h2 id="h-ctrl">Ajustes</h2>
+        <div class="slider" id="lamBox">
+          <div class="top"><label for="lam">λ da carga selecionada</label><output id="lamOut" for="lam">—</output></div>
+          <input type="range" id="lam" min="-3" max="3" step="0.5" value="1">
+          <div class="row"><button type="button" id="delCharge">Remover carga</button></div>
+        </div>
+        <div class="slider">
+          <div class="top"><label for="nExp">Expoente da lei de força, E ∝ 1/rⁿ</label><output id="nOut" for="nExp">1,00</output></div>
+          <input type="range" id="nExp" min="0.5" max="2" step="0.05" value="1">
+          <p class="hint">n = 1 é o fio real. Qualquer outro valor descreve um mundo hipotético.</p>
+        </div>
+      </section>
+
+      <section aria-labelledby="h-reg">
+        <h2 id="h-reg">Registro</h2>
+        <div class="row">
+          <button class="primary" type="button" id="record">Registrar medida</button>
+          <button type="button" id="copyCsv">Copiar tabela</button>
+          <button type="button" id="clearRec">Limpar</button>
+        </div>
+        <div class="table-box">
+          <table>
+            <thead><tr><th>#</th><th>Sit.</th><th>n</th><th>Superfície</th><th>λ env.</th><th>Φ</th><th>Φ − λ</th></tr></thead>
+            <tbody id="recBody"><tr><td colspan="7" style="text-align:left;font-family:var(--body);color:var(--muted)">Nenhuma medida registrada. Faça uma previsão, ajuste a bancada e toque em Registrar medida.</td></tr></tbody>
+          </table>
+        </div>
+        <p class="hint" id="copyMsg" hidden></p>
+        <textarea id="csvBox" hidden readonly aria-label="Tabela em formato CSV"></textarea>
+      </section>
+    </aside>
+  </div>
+
+  <div class="verify" id="verify" aria-label="Teste de verificação"></div>
+  <footer>Licença CC BY-NC-SA 4.0 [confirmar]. Penn Lee Menezes Rodrigues, UEPA. Protótipo v0.1, outubro de 2026.</footer>
+</div>
+
+<script>
+/* Núcleo físico do Laboratório 3 (Lei de Gauss).
+   Modelo: fios infinitos perpendiculares ao plano, densidade linear lam (em unidades de lambda0).
+   Campo de um fio: E = lam/(2*pi*eps0) * r_hat / r^n, com n = 1 para o fio real (r_ref = 1 u).
+   Fluxo por unidade de comprimento, em unidades de lambda0/eps0. */
+const Phys = (() => {
+  const TWO_PI = 2 * Math.PI;
+  const GL = [0.5 - 0.5 / Math.sqrt(3), 0.5 + 0.5 / Math.sqrt(3)]; // Gauss-Legendre, 2 pontos em [0,1]
+
+  function field(x, y, charges, n) {
+    let ex = 0, ey = 0;
+    for (const c of charges) {
+      const dx = x - c.x, dy = y - c.y;
+      const r2 = dx * dx + dy * dy;
+      if (r2 < 1e-14) continue;
+      const r = Math.sqrt(r2);
+      const mag = (c.lam / TWO_PI) * Math.pow(r, -n);
+      ex += (mag * dx) / r;
+      ey += (mag * dy) / r;
+    }
+    return [ex, ey];
+  }
+
+  function catmullRomClosed(ctrl, perSeg) {
+    const pts = [], K = ctrl.length;
+    for (let i = 0; i < K; i++) {
+      const p0 = ctrl[(i - 1 + K) % K], p1 = ctrl[i], p2 = ctrl[(i + 1) % K], p3 = ctrl[(i + 2) % K];
+      for (let s = 0; s < perSeg; s++) {
+        const t = s / perSeg, t2 = t * t, t3 = t2 * t;
+        const f = (a, b, c, d) => 0.5 * (2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t2 + (-a + 3 * b - 3 * c + d) * t3);
+        pts.push({ x: f(p0.x, p1.x, p2.x, p3.x), y: f(p0.y, p1.y, p2.y, p3.y) });
+      }
+    }
+    return pts;
+  }
+
+  function signedArea(pts) {
+    let a = 0;
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i], q = pts[(i + 1) % pts.length];
+      a += p.x * q.y - q.x * p.y;
+    }
+    return a / 2;
+  }
+
+  function windingNumber(px, py, pts) {
+    let w = 0;
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i], b = pts[(i + 1) % pts.length];
+      const ax = a.x - px, ay = a.y - py, bx = b.x - px, by = b.y - py;
+      w += Math.atan2(ax * by - ay * bx, ax * bx + ay * by);
+    }
+    return Math.round(w / TWO_PI);
+  }
+
+  function distToSegment(px, py, a, b) {
+    const dx = b.x - a.x, dy = b.y - a.y;
+    const L2 = dx * dx + dy * dy;
+    let t = L2 > 0 ? ((px - a.x) * dx + (py - a.y) * dy) / L2 : 0;
+    t = Math.max(0, Math.min(1, t));
+    return Math.hypot(px - (a.x + t * dx), py - (a.y + t * dy));
+  }
+
+  function minDistToCurve(px, py, pts) {
+    let d = Infinity;
+    for (let i = 0; i < pts.length; i++) d = Math.min(d, distToSegment(px, py, pts[i], pts[(i + 1) % pts.length]));
+    return d;
+  }
+
+  /* Fluxo numérico: soma de E·n ds sobre cada segmento da curva, com normal externa
+     escolhida pela orientação (área com sinal) e subdivisão adaptativa perto das cargas. */
+  function flux(pts, charges, n) {
+    const s = signedArea(pts) >= 0 ? 1 : -1;
+    const N = pts.length;
+    const seg = new Float64Array(N);
+    let phi = 0;
+    for (let i = 0; i < N; i++) {
+      const a = pts[i], b = pts[(i + 1) % N];
+      const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy);
+      if (len === 0) continue;
+      let dmin = Infinity;
+      for (const c of charges) dmin = Math.min(dmin, distToSegment(c.x, c.y, a, b));
+      const k = Math.min(600, Math.max(2, Math.ceil((6 * len) / Math.max(dmin, 1e-6))));
+      let acc = 0;
+      for (let j = 0; j < k; j++) {
+        for (const g of GL) {
+          const t = (j + g) / k;
+          const [ex, ey] = field(a.x + t * dx, a.y + t * dy, charges, n);
+          acc += ex * s * dy - ey * s * dx;
+        }
+      }
+      acc /= 2 * k;
+      seg[i] = acc;
+      phi += acc;
+    }
+    return { phi, seg, orientation: s };
+  }
+
+  /* Carga envolvida prevista pela lei de Gauss: soma de lam * (número de voltas) */
+  function enclosed(pts, charges) {
+    const s = signedArea(pts) >= 0 ? 1 : -1;
+    let q = 0;
+    const inside = [];
+    for (const c of charges) {
+      const w = windingNumber(c.x, c.y, pts) * s;
+      q += c.lam * w;
+      inside.push(w);
+    }
+    return { q, inside };
+  }
+
+  function segmentsCross(a, b, c, d) {
+    const o = (p, q, r) => (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x);
+    const d1 = o(a, b, c), d2 = o(a, b, d), d3 = o(c, d, a), d4 = o(c, d, b);
+    return d1 * d2 < 0 && d3 * d4 < 0;
+  }
+
+  function selfIntersects(pts) {
+    const N = pts.length;
+    for (let i = 0; i < N; i++) {
+      const a = pts[i], b = pts[(i + 1) % N];
+      for (let j = i + 2; j < N; j++) {
+        if (i === 0 && j === N - 1) continue;
+        if (segmentsCross(a, b, pts[j], pts[(j + 1) % N])) return true;
+      }
+    }
+    return false;
+  }
+
+  return { field, catmullRomClosed, signedArea, windingNumber, minDistToCurve, flux, enclosed, selfIntersects, TWO_PI };
+})();
+if (typeof module !== "undefined") module.exports = Phys;
+
+</script>
+<script>
+(() => {
+  const W = 12, H = 8, PER_SEG = 24;
+  const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+  const $ = id => document.getElementById(id);
+  const fmt = (v, d = 4) => (Math.abs(v) < 0.5 * Math.pow(10, -d) ? 0 : v).toLocaleString("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d });
+
+  const shapeNames = { circle: "Círculo", square: "Quadrado", ellipse: "Elipse", potato: "Irregular" };
+  function makeShape(kind, cx = 6, cy = 4, R = 1.8, K = 12) {
+    const pts = [];
+    for (let i = 0; i < K; i++) {
+      const t = (2 * Math.PI * i) / K;
+      let x, y;
+      if (kind === "circle") { x = R * Math.cos(t); y = R * Math.sin(t); }
+      else if (kind === "ellipse") { x = 1.45 * R * Math.cos(t); y = 0.7 * R * Math.sin(t); }
+      else if (kind === "potato") { const r = R * (1 + 0.25 * Math.sin(2 * t) + 0.15 * Math.cos(3 * t)); x = r * Math.cos(t); y = r * Math.sin(t); }
+      else { // quadrado: pontos ao longo do perímetro
+        const s = (i / K) * 4, side = Math.floor(s), f = s - side, a = R * 0.95;
+        const c = [[a, -a], [a, a], [-a, a], [-a, -a]];
+        const p = c[side], q = c[(side + 1) % 4];
+        x = p[0] + (q[0] - p[0]) * f; y = p[1] + (q[1] - p[1]) * f;
+      }
+      pts.push({ x: cx + x, y: cy + y });
+    }
+    return pts;
+  }
+
+  const situations = [
+    { title: "1. Deformar a superfície", setup: () => ({ charges: [{ x: 6, y: 4, lam: 1 }], shape: "circle", n: 1 }),
+      text: "Antes de mexer, anote se o fluxo deve mudar quando a superfície for deformada. Registre Φ para o círculo; depois arraste os pontos de controle até formas bem diferentes, sem cruzar a carga, e registre ao menos três medidas." },
+    { title: "2. Carga do lado de fora", setup: () => ({ charges: [{ x: 9.6, y: 4, lam: 1 }], shape: "circle", n: 1, cx: 5 }),
+      text: "Preveja Φ. Registre com a carga longe da superfície e depois bem perto dela, ainda do lado de fora. Observe as cores da curva e descreva onde o fluxo entra e onde sai." },
+    { title: "3. Várias cargas", setup: () => ({ charges: [{ x: 5.5, y: 3.5, lam: 2 }, { x: 6.7, y: 4.6, lam: -1 }, { x: 10.2, y: 1.8, lam: 3 }, { x: 1.8, y: 6.4, lam: -2 }], shape: "potato", n: 1, R: 2 }),
+      text: "Calcule à mão a carga envolvida antes de olhar o painel. Depois leve uma carga externa para dentro e uma interna para fora, prevendo cada nova medida antes de registrá-la." },
+    { title: "4. Carga sobre a superfície", setup: () => ({ charges: [{ x: 7.8, y: 4, lam: 1 }], shape: "circle", n: 1 }),
+      text: "O que o laboratório informa com a carga sobre a curva? Aproxime-a da superfície por dentro e por fora, registrando o fluxo a distâncias cada vez menores, e explique por que a lei de Gauss exige que nenhuma carga esteja sobre a superfície." },
+    { title: "5. Outra lei de força", setup: () => ({ charges: [{ x: 6, y: 4, lam: 1 }], shape: "circle", n: 2 }),
+      text: "Com n = 2, repita as situações 1 e 2. O fluxo continua independente da forma da superfície? E a carga externa ainda contribui com zero? Relacione o resultado com o expoente que você mediu no Laboratório 1." }
+  ];
+
+  const state = { charges: [], ctrl: [], shape: "circle", edited: false, n: 1, sel: 0, sit: 0, records: [],
+    arrows: true, lines: false, normals: false, handles: true };
+  let calc = null;
+
+  function loadSituation(i) {
+    const s = situations[i].setup();
+    state.sit = i;
+    state.charges = s.charges.map(c => ({ ...c }));
+    state.shape = s.shape; state.edited = false;
+    state.ctrl = makeShape(s.shape, s.cx ?? 6, 4, s.R ?? 1.8);
+    state.n = s.n; state.sel = 0;
+    $("shapeSel").value = s.shape;
+    $("nExp").value = s.n;
+    [...$("sitTabs").children].forEach((b, k) => b.setAttribute("aria-pressed", k === i ? "true" : "false"));
+    $("sitTitle").textContent = situations[i].title;
+    $("sitText").textContent = situations[i].text;
+    update();
+  }
+
+  function recompute() {
+    const pts = Phys.catmullRomClosed(state.ctrl, PER_SEG);
+    const fl = Phys.flux(pts, state.charges, state.n);
+    const en = Phys.enclosed(pts, state.charges);
+    let dmin = Infinity;
+    for (const c of state.charges) dmin = Math.min(dmin, Phys.minDistToCurve(c.x, c.y, pts));
+    calc = { pts, ...fl, q: en.q, inside: en.inside, dmin, cross: Phys.selfIntersects(pts) };
+  }
+
+  // ---------- desenho ----------
+  let scale = 60, dpr = 1, colors = {};
+  function readColors() {
+    const cs = getComputedStyle(document.documentElement);
+    for (const k of ["sheet", "ink", "muted", "grid", "grid-major", "pos", "neg", "field", "accent", "region"]) colors[k] = cs.getPropertyValue("--" + k).trim();
+  }
+  function resize() {
+    const w = cv.parentElement.clientWidth;
+    dpr = window.devicePixelRatio || 1;
+    scale = w / W;
+    cv.width = Math.round(w * dpr); cv.height = Math.round(H * scale * dpr);
+    cv.style.height = H * scale + "px";
+    draw();
+  }
+  const X = x => x * scale, Y = y => y * scale;
+
+  function arrow(x, y, ux, uy, L, color, alpha, width = 1.4) {
+    const x2 = x + ux * L, y2 = y + uy * L, h = Math.min(6, L * 0.35);
+    ctx.globalAlpha = alpha; ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = width;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x2, y2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - ux * h - uy * h * 0.55, y2 - uy * h + ux * h * 0.55);
+    ctx.lineTo(x2 - ux * h + uy * h * 0.55, y2 - uy * h - ux * h * 0.55);
+    ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+  }
+
+  function fieldLines() {
+    const lines = [];
+    let sources = state.charges.filter(c => c.lam > 0), sign = 1;
+    if (!sources.length) { sources = state.charges.filter(c => c.lam < 0); sign = -1; }
+    const sinks = state.charges.filter(c => c.lam * sign < 0);
+    const step = 0.04, maxSteps = 900;
+    const dir = (x, y) => { const [ex, ey] = Phys.field(x, y, state.charges, state.n); const m = Math.hypot(ex, ey) || 1; return [sign * ex / m, sign * ey / m]; };
+    for (const c of sources) {
+      const nl = Math.max(4, Math.round(8 * Math.abs(c.lam)));
+      for (let k = 0; k < nl; k++) {
+        const t = (2 * Math.PI * (k + 0.5)) / nl;
+        let x = c.x + 0.12 * Math.cos(t), y = c.y + 0.12 * Math.sin(t);
+        const path = [[x, y]];
+        for (let s = 0; s < maxSteps; s++) {
+          const k1 = dir(x, y), k2 = dir(x + step / 2 * k1[0], y + step / 2 * k1[1]), k3 = dir(x + step / 2 * k2[0], y + step / 2 * k2[1]), k4 = dir(x + step * k3[0], y + step * k3[1]);
+          x += step / 6 * (k1[0] + 2 * k2[0] + 2 * k3[0] + k4[0]); y += step / 6 * (k1[1] + 2 * k2[1] + 2 * k3[1] + k4[1]);
+          path.push([x, y]);
+          if (x < -0.5 || x > W + 0.5 || y < -0.5 || y > H + 0.5) break;
+          if (sinks.some(q => Math.hypot(q.x - x, q.y - y) < 0.1)) break;
+        }
+        lines.push(path);
+      }
+    }
+    return lines;
+  }
+
+  function draw() {
+    if (!calc) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = colors.sheet; ctx.fillRect(0, 0, W * scale, H * scale);
+    // papel quadriculado: 0,5 u e 1 u
+    for (let g = 0; g <= W * 2; g++) { ctx.strokeStyle = g % 2 ? colors.grid : colors["grid-major"]; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(Math.round(X(g / 2)) + 0.5, 0); ctx.lineTo(Math.round(X(g / 2)) + 0.5, H * scale); ctx.stroke(); }
+    for (let g = 0; g <= H * 2; g++) { ctx.strokeStyle = g % 2 ? colors.grid : colors["grid-major"]; ctx.beginPath(); ctx.moveTo(0, Math.round(Y(g / 2)) + 0.5); ctx.lineTo(W * scale, Math.round(Y(g / 2)) + 0.5); ctx.stroke(); }
+    // região interna
+    const pts = calc.pts;
+    ctx.fillStyle = colors.region; ctx.beginPath();
+    pts.forEach((p, i) => i ? ctx.lineTo(X(p.x), Y(p.y)) : ctx.moveTo(X(p.x), Y(p.y))); ctx.closePath(); ctx.fill();
+    // vetores
+    if (state.arrows) {
+      for (let gx = 0.25; gx < W; gx += 0.5) for (let gy = 0.25; gy < H; gy += 0.5) {
+        if (state.charges.some(c => Math.hypot(c.x - gx, c.y - gy) < 0.3)) continue;
+        const [ex, ey] = Phys.field(gx, gy, state.charges, state.n); const m = Math.hypot(ex, ey); if (m < 1e-6) continue;
+        const L = 0.4 * (1 - Math.exp(-m / 0.12));
+        arrow(X(gx - ex / m * L / 2), Y(gy - ey / m * L / 2), ex / m, ey / m, L * scale, colors.field, 0.35 + 0.5 * (L / 0.4));
+      }
+    }
+    if (state.lines) {
+      ctx.strokeStyle = colors.ink; ctx.globalAlpha = 0.55; ctx.lineWidth = 1.1;
+      for (const path of fieldLines()) { ctx.beginPath(); path.forEach(([x, y], i) => i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y))); ctx.stroke(); }
+      ctx.globalAlpha = 1;
+    }
+    // curva colorida pelo sinal de E·n̂
+    const N = pts.length;
+    ctx.lineWidth = 3.5; ctx.lineCap = "round";
+    for (let i = 0; i < N; i++) {
+      const a = pts[i], b = pts[(i + 1) % N], len = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+      const dens = calc.seg[i] / len;
+      ctx.strokeStyle = Math.abs(dens) < 1e-4 ? colors.muted : dens > 0 ? colors.pos : colors.neg;
+      ctx.beginPath(); ctx.moveTo(X(a.x), Y(a.y)); ctx.lineTo(X(b.x), Y(b.y)); ctx.stroke();
+    }
+    if (state.normals) {
+      for (let i = 0; i < N; i += 12) {
+        const a = pts[i], b = pts[(i + 1) % N], dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy) || 1;
+        const nx = calc.orientation * dy / len, ny = -calc.orientation * dx / len;
+        arrow(X((a.x + b.x) / 2), Y((a.y + b.y) / 2), nx, ny, 0.45 * scale, colors.accent, 0.9, 1.6);
+      }
+    }
+    if (state.handles) {
+      for (const p of state.ctrl) { ctx.fillStyle = colors.sheet; ctx.strokeStyle = colors.accent; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(X(p.x), Y(p.y), Math.max(4, Math.min(6, scale * 0.09)), 0, 2 * Math.PI); ctx.fill(); ctx.stroke(); }
+    }
+    // cargas
+    state.charges.forEach((c, i) => {
+      const col = c.lam > 0 ? colors.pos : c.lam < 0 ? colors.neg : colors.muted;
+      const r = Math.max(7, Math.min(18, (0.17 + 0.03 * Math.abs(c.lam)) * scale));
+      if (i === state.sel) { ctx.strokeStyle = colors.ink; ctx.lineWidth = 2; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.arc(X(c.x), Y(c.y), r + 5, 0, 2 * Math.PI); ctx.stroke(); ctx.setLineDash([]); }
+      ctx.fillStyle = col; ctx.beginPath(); ctx.arc(X(c.x), Y(c.y), r, 0, 2 * Math.PI); ctx.fill();
+      ctx.fillStyle = colors.sheet; ctx.font = "600 " + Math.round(Math.max(11, Math.min(15, r * 1.2))) + "px IBM Plex Sans, system-ui, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(c.lam > 0 ? "+" : c.lam < 0 ? "−" : "0", X(c.x), Y(c.y) + 1);
+      ctx.fillStyle = colors.ink; ctx.font = "500 " + (scale < 45 ? 10 : 12) + "px IBM Plex Mono, monospace";
+      ctx.fillText("λ=" + fmt(c.lam, 1), X(c.x), Y(c.y) + r + 12);
+    });
+    // escala
+    ctx.strokeStyle = colors.ink; ctx.lineWidth = 2; const sx = W * scale - X(1) - 14, sy = H * scale - 16;
+    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + X(1), sy); ctx.moveTo(sx, sy - 4); ctx.lineTo(sx, sy + 4); ctx.moveTo(sx + X(1), sy - 4); ctx.lineTo(sx + X(1), sy + 4); ctx.stroke();
+    ctx.fillStyle = colors.ink; ctx.font = "500 12px IBM Plex Mono, monospace"; ctx.textAlign = "center"; ctx.textBaseline = "bottom"; ctx.fillText("1 u", sx + X(1) / 2, sy - 5);
+  }
+
+  // ---------- painel ----------
+  function panel() {
+    $("rPhi").textContent = fmt(calc.phi);
+    $("rQ").textContent = fmt(calc.q);
+    $("rDiff").textContent = fmt(calc.phi - calc.q);
+    $("nOut").textContent = fmt(state.n, 2);
+    const msgs = [];
+    if (calc.dmin < 0.06) msgs.push("Há uma carga sobre a superfície (a menos de 0,06 u da curva). O fluxo fica mal definido e o valor numérico deixa de ser confiável.");
+    if (calc.cross) msgs.push("A curva se cruza e já não delimita uma única região; a previsão conta quantas voltas a curva dá em torno de cada carga.");
+    if (Math.abs(state.n - 1) > 1e-9) msgs.push("Lei de força modificada, E ∝ 1/r^" + fmt(state.n, 2) + ". Este não é o campo de um fio real.");
+    $("warn").hidden = !msgs.length; $("warn").textContent = msgs.join(" ");
+    const c = state.charges[state.sel];
+    $("lamBox").hidden = !c;
+    if (c) { $("lam").value = c.lam; $("lamOut").textContent = fmt(c.lam, 1) + " λ₀"; }
+  }
+
+  function update() { recompute(); draw(); panel(); }
+
+  // ---------- interação ----------
+  function toWorld(e) { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) / scale, y: (e.clientY - r.top) / scale }; }
+  let drag = null;
+  cv.addEventListener("pointerdown", e => {
+    const p = toWorld(e), hr = e.pointerType === "touch" ? 0.5 : 0.3;
+    let best = null, bd = Infinity;
+    state.charges.forEach((c, i) => { const d = Math.hypot(c.x - p.x, c.y - p.y); if (d < hr && d < bd) { bd = d; best = { kind: "charge", i }; } });
+    if (!best && state.handles) state.ctrl.forEach((q, i) => { const d = Math.hypot(q.x - p.x, q.y - p.y); if (d < hr * 0.85 && d < bd) { bd = d; best = { kind: "handle", i }; } });
+    if (!best && Phys.windingNumber(p.x, p.y, calc.pts) !== 0) best = { kind: "curve", last: p };
+    if (!best) return;
+    if (best.kind === "charge") state.sel = best.i;
+    drag = best; cv.setPointerCapture(e.pointerId); cv.className = "grabbing"; e.preventDefault(); update();
+  });
+  cv.addEventListener("pointermove", e => {
+    const p = toWorld(e);
+    if (!drag) { cv.className = (state.charges.some(c => Math.hypot(c.x - p.x, c.y - p.y) < 0.3) || (state.handles && state.ctrl.some(q => Math.hypot(q.x - p.x, q.y - p.y) < 0.25))) ? "grab" : ""; return; }
+    const cx = Math.max(0.1, Math.min(W - 0.1, p.x)), cy = Math.max(0.1, Math.min(H - 0.1, p.y));
+    if (drag.kind === "charge") { state.charges[drag.i].x = cx; state.charges[drag.i].y = cy; }
+    else if (drag.kind === "handle") { state.ctrl[drag.i] = { x: cx, y: cy }; state.edited = true; }
+    else { const dx = p.x - drag.last.x, dy = p.y - drag.last.y; state.ctrl = state.ctrl.map(q => ({ x: q.x + dx, y: q.y + dy })); drag.last = p; }
+    update();
+  });
+  const endDrag = () => { drag = null; cv.className = ""; };
+  cv.addEventListener("pointerup", endDrag); cv.addEventListener("pointercancel", endDrag);
+
+  function addCharge(lam) {
+    let x, y, tries = 0;
+    do { x = 1 + Math.random() * (W - 2); y = 1 + Math.random() * (H - 2); tries++; }
+    while (tries < 50 && (state.charges.some(c => Math.hypot(c.x - x, c.y - y) < 0.8) || Phys.minDistToCurve(x, y, calc.pts) < 0.4));
+    state.charges.push({ x, y, lam }); state.sel = state.charges.length - 1; update();
+  }
+  $("addPos").onclick = () => addCharge(1);
+  $("addNeg").onclick = () => addCharge(-1);
+  $("delCharge").onclick = () => { if (!state.charges.length) return; state.charges.splice(state.sel, 1); state.sel = Math.max(0, state.sel - 1); update(); };
+  $("lam").oninput = e => { const c = state.charges[state.sel]; if (c) { c.lam = parseFloat(e.target.value); update(); } };
+  $("nExp").oninput = e => { state.n = parseFloat(e.target.value); update(); };
+  $("shapeSel").onchange = e => {
+    const cx = state.ctrl.reduce((s, q) => s + q.x, 0) / state.ctrl.length, cy = state.ctrl.reduce((s, q) => s + q.y, 0) / state.ctrl.length;
+    state.shape = e.target.value; state.edited = false; state.ctrl = makeShape(state.shape, cx, cy); update();
+  };
+  for (const [id, key] of [["optArrows", "arrows"], ["optLines", "lines"], ["optNormals", "normals"], ["optHandles", "handles"]])
+    $(id).onchange = e => { state[key] = e.target.checked; draw(); };
+
+  situations.forEach((s, i) => { const b = document.createElement("button"); b.type = "button"; b.textContent = "S" + (i + 1); b.title = s.title; b.onclick = () => loadSituation(i); $("sitTabs").appendChild(b); });
+
+  // ---------- registro ----------
+  function renderRecords() {
+    const tb = $("recBody");
+    if (!state.records.length) { tb.innerHTML = '<tr><td colspan="7" style="text-align:left;font-family:var(--body);color:var(--muted)">Nenhuma medida registrada. Faça uma previsão, ajuste a bancada e toque em Registrar medida.</td></tr>'; return; }
+    tb.innerHTML = "";
+    state.records.forEach(r => {
+      const tr = document.createElement("tr");
+      [r.k, "S" + r.sit, fmt(r.n, 2), r.shape, fmt(r.q, 2), fmt(r.phi), fmt(r.phi - r.q)].forEach(v => { const td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+      tb.appendChild(tr);
+    });
+    tb.parentElement.parentElement.scrollTop = 1e6;
+  }
+  $("record").onclick = () => {
+    state.records.push({ k: state.records.length + 1, sit: state.sit + 1, n: state.n, shape: shapeNames[state.shape] + (state.edited ? " (editada)" : ""), q: calc.q, phi: calc.phi });
+    renderRecords();
+  };
+  $("clearRec").onclick = () => { state.records = []; renderRecords(); $("csvBox").hidden = true; $("copyMsg").hidden = true; };
+  function csv() {
+    const head = "medida;situacao;n;superficie;lambda_envolvida;Phi;Phi_menos_lambda_env";
+    return [head, ...state.records.map(r => [r.k, r.sit, fmt(r.n, 2), r.shape, fmt(r.q, 2), fmt(r.phi, 6), fmt(r.phi - r.q, 6)].join(";"))].join("\n");
+  }
+  $("copyCsv").onclick = () => {
+    const text = csv(), box = $("csvBox"), msg = $("copyMsg");
+    const fallback = () => { box.value = text; box.hidden = false; box.focus(); box.select(); msg.hidden = false; msg.textContent = "Selecione o texto abaixo e copie (Ctrl+C ou toque longo)."; };
+    try {
+      navigator.clipboard.writeText(text).then(() => { msg.hidden = false; msg.textContent = "Tabela copiada. Cole numa planilha; as colunas são separadas por ponto e vírgula."; box.hidden = true; }, fallback);
+    } catch (err) { fallback(); }
+  };
+
+  // ---------- teste de verificação ao carregar ----------
+  (function selfTest() {
+    const circ = (cx, cy, R, N) => Array.from({ length: N }, (_, i) => ({ x: cx + R * Math.cos(2 * Math.PI * i / N), y: cy + R * Math.sin(2 * Math.PI * i / N) }));
+    const a = Phys.flux(circ(6, 4, 1.5, 720), [{ x: 6, y: 4, lam: 1 }], 1).phi;
+    const b = Phys.flux(circ(6, 4, 1.5, 720), [{ x: 9, y: 4, lam: 1 }], 1).phi;
+    const ok = Math.abs(a - 1) < 1e-6 && Math.abs(b) < 1e-6;
+    $("verify").innerHTML = "<span>Teste de verificação ao abrir: <b>" + (ok ? "aprovado" : "reprovado") + "</b></span>" +
+      "<span>λ = 1 no centro de um círculo de raio 1,5 u: Φ = " + fmt(a, 6) + " (previsto 1)</span>" +
+      "<span>λ = 1 fora do círculo: Φ = " + fmt(b, 6) + " (previsto 0)</span>";
+  })();
+
+  // tema
+  const mq = window.matchMedia("(prefers-color-scheme: dark)");
+  const retheme = () => { readColors(); draw(); };
+  mq.addEventListener ? mq.addEventListener("change", retheme) : mq.addListener(retheme);
+  new MutationObserver(retheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  readColors();
+  loadSituation(0);
+  window.addEventListener("resize", resize);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => draw());
+  resize();
+})();
+</script>
+
+</body>
+</html>

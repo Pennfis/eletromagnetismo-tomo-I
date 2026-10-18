@@ -1,0 +1,952 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Circulação e rotacional</title>
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,'Segoe UI',sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,600&display=swap">
+<style>
+/* Layout: bancada — prancheta quadriculada à esquerda, caderno de medidas à direita; empilha no celular. */
+:root {
+  --paper: #f3f5f6;
+  --sheet: #fbfcfc;
+  --ink: #17232b;
+  --muted: #5a6a74;
+  --grid: #d9e2e7;
+  --grid-major: #c3d0d7;
+  --rule: #d3dce1;
+  --pos: #c2410c;
+  --neg: #1d5fbf;
+  --field: #6d7f8a;
+  --accent: #0f6e6a;
+  --ind: #7a3fb0;
+  --warn-bg: #fff4e0;
+  --warn-ink: #7a4b00;
+  --region: rgba(15, 110, 106, 0.07);
+  --display: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0f171c; --sheet: #142028; --ink: #e3ebef; --muted: #93a5b0;
+    --grid: #1d2c35; --grid-major: #283a45; --rule: #2a3a44;
+    --pos: #f2814f; --neg: #6aa7ff; --field: #8296a2; --accent: #4fc2b8; --ind: #c39af0;
+    --warn-bg: #3a2a0d; --warn-ink: #f5c97a; --region: rgba(79, 194, 184, 0.08);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0f171c; --sheet: #142028; --ink: #e3ebef; --muted: #93a5b0;
+  --grid: #1d2c35; --grid-major: #283a45; --rule: #2a3a44;
+  --pos: #f2814f; --neg: #6aa7ff; --field: #8296a2; --accent: #4fc2b8; --ind: #c39af0;
+  --warn-bg: #3a2a0d; --warn-ink: #f5c97a; --region: rgba(79, 194, 184, 0.08);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  background: var(--paper); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 32px;
+}
+.wrap { max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+header { display: flex; flex-direction: column; gap: 6px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--display); font-weight: 600; font-size: clamp(26px, 4vw, 36px); line-height: 1.15; margin: 0; text-wrap: balance; }
+.model { max-width: 78ch; color: var(--muted); margin: 0; }
+.model b { color: var(--ink); font-weight: 600; }
+.bench { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 18px; align-items: start; }
+@media (max-width: 900px) { .bench { grid-template-columns: minmax(0, 1fr); } }
+.board { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.canvas-box { background: var(--sheet); border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; touch-action: none; }
+canvas { display: block; width: 100%; height: auto; cursor: crosshair; }
+canvas.grab { cursor: grab; } canvas.grabbing { cursor: grabbing; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+@media (max-width: 600px) { .toolbar .sep { display: none; } }
+.toolbar .sep { width: 1px; align-self: stretch; background: var(--rule); margin: 0 4px; }
+button, select { font: inherit; font-size: 14px; color: var(--ink); background: var(--sheet); border: 1px solid var(--rule); border-radius: 5px; padding: 6px 11px; cursor: pointer; }
+button:hover { border-color: var(--muted); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--sheet); font-weight: 500; }
+button.pos { color: var(--pos); font-weight: 600; } button.neg { color: var(--neg); font-weight: 600; }
+label.check { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--muted); cursor: pointer; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--muted); }
+.legend span::before { content: ""; display: inline-block; width: 16px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle; background: currentColor; }
+.legend .lo { color: var(--pos); } .legend .li { color: var(--neg); }
+.legend .lo, .legend .li { font-weight: 500; }
+.legend .ld::before { height: 0; background: none; border-top: 3px dashed currentColor; }
+.legend .lind { color: var(--ind); font-weight: 500; }
+.ind-banner { border-left: 4px solid var(--ind); background: var(--sheet); border-radius: 0 5px 5px 0; padding: 8px 12px; font-size: 14px; }
+.ind-banner b { color: var(--ind); font-weight: 600; }
+.notebook { background: var(--sheet); border: 1px solid var(--rule); border-radius: 6px; display: flex; flex-direction: column; min-width: 0; }
+.notebook section { padding: 14px 16px; border-top: 1px solid var(--rule); display: flex; flex-direction: column; gap: 10px; }
+.notebook section:first-child { border-top: none; }
+h2 { font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.readout { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: baseline; margin: 0; }
+.readout[hidden] { display: none; }
+.readout dt { font-size: 14px; } .readout dd { margin: 0; font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 18px; text-align: right; }
+.readout dd.big { font-size: 26px; font-weight: 500; color: var(--accent); }
+.readout dd.txt { font-family: var(--body); font-size: 15px; }
+.readout dt small { display: block; color: var(--muted); font-size: 12px; }
+.readout .ind { color: var(--ind); }
+.readout .sub { border-top: 1px dashed var(--rule); padding-top: 4px; }
+.warn { background: var(--warn-bg); color: var(--warn-ink); border-radius: 5px; padding: 8px 10px; font-size: 13px; }
+.sit-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.sit-tabs button { font-family: var(--mono); font-size: 13px; padding: 4px 10px; }
+.sit-tabs button[aria-pressed="true"] { background: var(--ink); color: var(--sheet); border-color: var(--ink); }
+.sit-title { font-weight: 600; margin: 0; }
+.sit-text { margin: 0; font-size: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.slider { display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.slider[hidden] { display: none; }
+.slider .top { display: flex; justify-content: space-between; gap: 8px; }
+.slider output { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+.hint { font-size: 12px; color: var(--muted); margin: 0; }
+.table-box { overflow-x: auto; max-height: 260px; overflow-y: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 4px 6px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+th:nth-child(2), td:nth-child(2), th:nth-child(3), td:nth-child(3), th:nth-child(4), td:nth-child(4) { text-align: left; }
+th { font-weight: 500; color: var(--muted); font-size: 12px; position: sticky; top: 0; background: var(--sheet); }
+td { font-family: var(--mono); }
+textarea { width: 100%; min-height: 90px; font-family: var(--mono); font-size: 12px; background: var(--paper); color: var(--ink); border: 1px solid var(--rule); border-radius: 5px; padding: 6px; }
+.verify { font-family: var(--mono); font-size: 12px; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 12px; display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.verify b { color: var(--accent); font-weight: 500; }
+footer { font-size: 12px; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Eletromagnetismo · Tomo I · Módulo 5 · Laboratório 5</div>
+    <h1>Circulação e rotacional</h1>
+    <p class="model"><b>Modelo.</b> Cada carga é um fio infinito, perpendicular à tela, com densidade linear λ (em unidades de λ₀), cujo campo decai como 1/r, e o laboratório calcula numericamente a circulação <b>∮ E·dl</b> ao longo de curvas fechadas e a integral <b>∫ E·dl</b> ao longo de caminhos abertos, em unidades de λ₀/ε₀, por quadratura de Gauss–Legendre com subdivisão adaptativa perto das cargas. O sentido anti-horário é o que vê quem olha a tela, e o eixo z aponta para fora dela. Quando ligado, soma-se ao campo dos fios o <b>campo elétrico induzido</b> de um solenoide longo de raio a = 1,5 u, centrado na prancheta, cujo campo magnético varia uniformemente no tempo, com E = (k r/2) φ̂ dentro e E = (k a²/2r) φ̂ fora, em que k = −dB/dt e B é medido para fora da tela; esse campo não é eletrostático, pertence ao Tomo II e aparece sempre identificado em separado.</p>
+  </header>
+
+  <div class="bench">
+    <div class="board">
+      <div class="toolbar" role="toolbar" aria-label="Ferramentas da bancada">
+        <button class="pos" id="addPos" type="button">+ carga positiva</button>
+        <button class="neg" id="addNeg" type="button">− carga negativa</button>
+        <span class="sep" aria-hidden="true"></span>
+        <label class="check" for="modeSel">Instrumento
+          <select id="modeSel">
+            <option value="closed">Curva fechada</option>
+            <option value="open">Dois caminhos</option>
+            <option value="probe">Sonda local</option>
+          </select>
+        </label>
+        <label class="check" for="shapeSel" id="shapeBox">Forma
+          <select id="shapeSel">
+            <option value="circle">Círculo</option>
+            <option value="square">Quadrado</option>
+            <option value="ellipse">Elipse</option>
+            <option value="potato">Irregular</option>
+          </select>
+        </label>
+        <button type="button" id="flip">Inverter sentido</button>
+        <span class="sep" aria-hidden="true"></span>
+        <label class="check" for="optArrows"><input type="checkbox" id="optArrows" checked> vetores</label>
+        <label class="check" for="optHandles"><input type="checkbox" id="optHandles" checked> pontos de controle</label>
+        <label class="check" for="optInd"><input type="checkbox" id="optInd"> campo induzido</label>
+      </div>
+      <div class="ind-banner" id="indBanner" hidden><b>Campo elétrico induzido, não eletrostático — tema do Tomo II.</b> O círculo tracejado é o corte do solenoide; os vetores e as medidas passam a incluir esse campo, e o caderno mostra a parte dos fios e a parte induzida separadamente.</div>
+      <div class="canvas-box"><canvas id="cv" aria-label="Plano com cargas, campo elétrico e o instrumento de medida ativo. Arraste cargas, pontos de controle, extremidades dos caminhos, a sonda ou o interior da curva."></canvas></div>
+      <div class="legend" aria-label="Legenda">
+        <span class="lo">E·dl a favor do sentido de percurso</span>
+        <span class="li">E·dl contra o sentido de percurso</span>
+        <span style="color:var(--field)" id="lgField">vetor E (comprimento comprimido)</span>
+        <span class="ld" style="color:var(--ink)" id="lgPath2" hidden>caminho 2 (o caminho 1 é contínuo)</span>
+        <span class="ld lind" id="lgInd" hidden>solenoide: campo induzido, não eletrostático</span>
+      </div>
+      <p class="hint" id="hint"></p>
+    </div>
+
+    <aside class="notebook" aria-label="Caderno de medidas">
+      <section aria-labelledby="h-read">
+        <h2 id="h-read">Medida</h2>
+        <dl class="readout" id="roClosed">
+          <dt>∮ E·dl medido<small>soma numérica ao longo da curva, no sentido indicado</small></dt><dd class="big" id="rCirc">—</dd>
+          <dt class="ind sub" data-ind>parte dos fios<small>campo eletrostático</small></dt><dd class="sub" data-ind id="rCircS">—</dd>
+          <dt class="ind" data-ind>parte induzida<small>campo não eletrostático</small></dt><dd class="ind" data-ind id="rCircI">—</dd>
+          <dt class="ind" data-ind>k · A previsto<small>k vezes a área do disco do solenoide envolvida pela curva, com o sinal do sentido</small></dt><dd class="ind" data-ind id="rKA">—</dd>
+          <dt class="sub">Área envolvida</dt><dd class="sub" id="rArea">—</dd>
+          <dt>Sentido de percurso</dt><dd class="txt" id="rSense">—</dd>
+        </dl>
+        <dl class="readout" id="roOpen" hidden>
+          <dt>W₁ = ∫₁ E·dl<small>caminho 1, contínuo, de A para B</small></dt><dd class="big" id="rW1">—</dd>
+          <dt>W₂ = ∫₂ E·dl<small>caminho 2, tracejado, de A para B</small></dt><dd class="big" id="rW2">—</dd>
+          <dt class="sub">W₁ − W₂<small>circulação do laço formado pelo caminho 1 de A até B e pelo caminho 2 de volta, de B até A</small></dt><dd class="sub" id="rW12">—</dd>
+          <dt>V(A) − V(B)<small id="vNote">calculado com V = −(λ/2π) ln r para cada fio; a constante aditiva se cancela na diferença</small></dt><dd id="rVAB">—</dd>
+        </dl>
+        <dl class="readout" id="roProbe" hidden>
+          <dt>∮ E·dl ÷ área<small>estimativa numérica de (∇×E)_z no centro da sonda</small></dt><dd class="big" id="rRatio">—</dd>
+          <dt class="sub">∮ E·dl na sonda<small>percorrida no sentido anti-horário</small></dt><dd class="sub" id="rPC">—</dd>
+          <dt>Área da sonda</dt><dd id="rPA">—</dd>
+          <dt>(∇×E)_z analítico<small>no centro da sonda</small></dt><dd id="rCurl">—</dd>
+        </dl>
+        <div class="warn" id="warn" hidden></div>
+      </section>
+
+      <section aria-labelledby="h-sit">
+        <h2 id="h-sit">Situações</h2>
+        <div class="sit-tabs" id="sitTabs"></div>
+        <p class="sit-title" id="sitTitle"></p>
+        <p class="sit-text" id="sitText"></p>
+      </section>
+
+      <section aria-labelledby="h-ctrl">
+        <h2 id="h-ctrl">Ajustes</h2>
+        <div class="slider" id="lamBox">
+          <div class="top"><label for="lam">λ da carga selecionada</label><output id="lamOut" for="lam">—</output></div>
+          <input type="range" id="lam" min="-3" max="3" step="0.5" value="1">
+          <div class="row"><button type="button" id="delCharge">Remover carga</button></div>
+        </div>
+        <p class="hint" id="noCharge" hidden>Não há cargas na bancada. Use os botões acima da prancheta para acrescentar uma.</p>
+        <div class="slider" id="kBox" hidden>
+          <div class="top"><label for="kSl">k = −dB/dt do solenoide</label><output id="kOut" for="kSl">1,0</output></div>
+          <input type="range" id="kSl" min="-2" max="2" step="0.1" value="1">
+          <p class="hint">Com k &gt; 0 o campo induzido circula no sentido anti-horário; com k &lt; 0, no horário. Raio do solenoide fixo em a = 1,5 u.</p>
+        </div>
+        <div class="slider" id="rBox" hidden>
+          <div class="top"><label for="rSl">Raio da sonda</label><output id="rOut" for="rSl">0,30 u</output></div>
+          <input type="range" id="rSl" min="0.05" max="0.6" step="0.01" value="0.3">
+        </div>
+      </section>
+
+      <section aria-labelledby="h-reg">
+        <h2 id="h-reg">Registro</h2>
+        <div class="row">
+          <button class="primary" type="button" id="record">Registrar medida</button>
+          <button type="button" id="copyCsv">Copiar tabela</button>
+          <button type="button" id="clearRec">Limpar</button>
+        </div>
+        <div class="table-box">
+          <table>
+            <thead><tr><th>#</th><th>Sit.</th><th>Instrumento</th><th>Sentido</th><th>k</th><th>Área</th><th>Medida</th><th>Referência</th></tr></thead>
+            <tbody id="recBody"></tbody>
+          </table>
+        </div>
+        <p class="hint">Medida: ∮ E·dl para a curva, W para cada caminho, ∮ E·dl ÷ área para a sonda. Referência: k·A previsto (curva com campo induzido), V(A) − V(B) (caminhos) ou (∇×E)_z analítico (sonda).</p>
+        <p class="hint" id="copyMsg" hidden></p>
+        <textarea id="csvBox" hidden readonly aria-label="Tabela em formato CSV"></textarea>
+      </section>
+    </aside>
+  </div>
+
+  <div class="verify" id="verify" aria-label="Teste de verificação"></div>
+  <footer>Licença CC BY-NC-SA 4.0 [confirmar]. Penn Lee Menezes Rodrigues, UEPA. Protótipo v0.1, outubro de 2026.</footer>
+</div>
+
+<script>
+/* Núcleo físico do Laboratório 5 (Circulação e rotacional).
+   Coordenadas de TELA: x para a direita, y para baixo, em unidades u.
+   Convenção de sentido: "anti-horário" é sempre o anti-horário VISTO PELO OBSERVADOR na tela.
+   Como o eixo y aponta para baixo, a fórmula usual do laço (shoelace) dá área positiva para o
+   sentido horário visual; por isso ccwArea() troca o sinal. O eixo z aponta para fora da tela,
+   em direção ao observador, e (rot E)_z é a circulação anti-horária visual por unidade de área.
+
+   Campo eletrostático: fios infinitos perpendiculares à tela, densidade lam (em lambda0), eps0 = 1:
+     E = lam/(2 pi) r_hat / r,   V = -(lam/2 pi) ln r  (constante aditiva nula em r = 1 u).
+   Campo induzido (NÃO eletrostático, tema do Tomo II): solenoide longo de raio a, centro (x, y),
+   com k = -dB/dt e B medido no sentido de z (para fora da tela):
+     E = (k r/2) phi_hat (r < a),  E = (k a^2/(2 r)) phi_hat (r > a),
+   com phi_hat anti-horário visual. Em coordenadas de tela, r phi_hat = (dy, -dx). */
+const Phys = (() => {
+  const TWO_PI = 2 * Math.PI;
+  // Gauss-Legendre de 4 pontos em [0,1]
+  const GLX = [0.3399810435848563, 0.8611363115940526];
+  const GLW = [0.6521451548625461, 0.3478548451374538];
+  const GL = [
+    [0.5 - 0.5 * GLX[1], GLW[1] / 2], [0.5 - 0.5 * GLX[0], GLW[0] / 2],
+    [0.5 + 0.5 * GLX[0], GLW[0] / 2], [0.5 + 0.5 * GLX[1], GLW[1] / 2]
+  ];
+
+  function field(x, y, charges) {
+    let ex = 0, ey = 0;
+    for (const c of charges) {
+      const dx = x - c.x, dy = y - c.y, r2 = dx * dx + dy * dy;
+      if (r2 < 1e-14) continue;
+      const m = c.lam / (TWO_PI * r2);
+      ex += m * dx; ey += m * dy;
+    }
+    return [ex, ey];
+  }
+
+  function inducedField(x, y, sol) {
+    const dx = x - sol.x, dy = y - sol.y, r2 = dx * dx + dy * dy;
+    const f = r2 < sol.a * sol.a ? sol.k / 2 : (sol.k * sol.a * sol.a) / (2 * r2);
+    return [f * dy, -f * dx];
+  }
+
+  function totalField(x, y, charges, sol) {
+    const e = field(x, y, charges);
+    if (sol && sol.k !== 0) { const f = inducedField(x, y, sol); e[0] += f[0]; e[1] += f[1]; }
+    return e;
+  }
+
+  function potential(x, y, charges) {
+    let v = 0;
+    for (const c of charges) v -= (c.lam / TWO_PI) * Math.log(Math.hypot(x - c.x, y - c.y));
+    return v;
+  }
+
+  // (rot E)_z analítico: o campo dos fios não contribui; o induzido vale k dentro e 0 fora.
+  function curlZ(x, y, sol) {
+    if (!sol || sol.k === 0) return 0;
+    const r = Math.hypot(x - sol.x, y - sol.y);
+    return r < sol.a ? sol.k : r > sol.a ? 0 : sol.k / 2;
+  }
+
+  function catmullRomClosed(ctrl, perSeg) {
+    const pts = [], K = ctrl.length;
+    for (let i = 0; i < K; i++) {
+      const p0 = ctrl[(i - 1 + K) % K], p1 = ctrl[i], p2 = ctrl[(i + 1) % K], p3 = ctrl[(i + 2) % K];
+      for (let s = 0; s < perSeg; s++) pts.push(crPoint(p0, p1, p2, p3, s / perSeg));
+    }
+    return pts;
+  }
+
+  // Curva aberta pelos pontos dados, com pontos fantasmas refletidos nas extremidades.
+  function catmullRomOpen(ctrl, perSeg) {
+    const K = ctrl.length, pts = [];
+    const ext = [{ x: 2 * ctrl[0].x - ctrl[1].x, y: 2 * ctrl[0].y - ctrl[1].y }, ...ctrl,
+      { x: 2 * ctrl[K - 1].x - ctrl[K - 2].x, y: 2 * ctrl[K - 1].y - ctrl[K - 2].y }];
+    for (let i = 0; i < K - 1; i++)
+      for (let s = 0; s < perSeg; s++) pts.push(crPoint(ext[i], ext[i + 1], ext[i + 2], ext[i + 3], s / perSeg));
+    pts.push({ x: ctrl[K - 1].x, y: ctrl[K - 1].y });
+    return pts;
+  }
+
+  function crPoint(p0, p1, p2, p3, t) {
+    const t2 = t * t, t3 = t2 * t;
+    const f = (a, b, c, d) => 0.5 * (2 * b + (-a + c) * t + (2 * a - 5 * b + 4 * c - d) * t2 + (-a + 3 * b - 3 * c + d) * t3);
+    return { x: f(p0.x, p1.x, p2.x, p3.x), y: f(p0.y, p1.y, p2.y, p3.y) };
+  }
+
+  // Área com sinal: positiva quando a curva é percorrida no sentido anti-horário visual.
+  function ccwArea(pts) {
+    let a = 0;
+    for (let i = 0; i < pts.length; i++) {
+      const p = pts[i], q = pts[(i + 1) % pts.length];
+      a += p.x * q.y - q.x * p.y;
+    }
+    return -a / 2;
+  }
+
+  // Número de voltas anti-horárias (visuais) da curva em torno do ponto.
+  function windingNumber(px, py, pts) {
+    let w = 0;
+    for (let i = 0; i < pts.length; i++) {
+      const a = pts[i], b = pts[(i + 1) % pts.length];
+      const ax = a.x - px, ay = a.y - py, bx = b.x - px, by = b.y - py;
+      w += Math.atan2(ax * by - ay * bx, ax * bx + ay * by);
+    }
+    return -Math.round(w / TWO_PI);
+  }
+
+  function distToSegment(px, py, a, b) {
+    const dx = b.x - a.x, dy = b.y - a.y, L2 = dx * dx + dy * dy;
+    let t = L2 > 0 ? ((px - a.x) * dx + (py - a.y) * dy) / L2 : 0;
+    t = Math.max(0, Math.min(1, t));
+    return Math.hypot(px - (a.x + t * dx), py - (a.y + t * dy));
+  }
+
+  function minDistToCurve(px, py, pts, closed = true) {
+    let d = Infinity;
+    const M = closed ? pts.length : pts.length - 1;
+    for (let i = 0; i < M; i++) d = Math.min(d, distToSegment(px, py, pts[i], pts[(i + 1) % pts.length]));
+    return d;
+  }
+
+  /* ∫ f·dl no segmento a→b, entre os parâmetros t0 e t1, com n subintervalos de Gauss-Legendre. */
+  function glSegment(ax, ay, dx, dy, t0, t1, n, f) {
+    let acc = 0;
+    const h = (t1 - t0) / n;
+    for (let j = 0; j < n; j++) {
+      for (const [g, w] of GL) {
+        const t = t0 + (j + g) * h;
+        const e = f(ax + t * dx, ay + t * dy);
+        acc += w * (e[0] * dx + e[1] * dy);
+      }
+    }
+    return acc * h;
+  }
+  const nSub = (len, d) => Math.min(4000, Math.max(1, Math.ceil((4 * len) / Math.max(d, 1e-9))));
+
+  /* Integral de linha numérica ∫E·dl ao longo de uma poligonal (aberta ou fechada).
+     Devolve a parte eletrostática, a parte induzida e o valor de cada segmento.
+     Perto das cargas, cada segmento é subdividido de modo que o subintervalo seja menor que
+     1/4 da distância à carga mais próxima. Para o campo induzido, o segmento é cortado onde
+     cruza a borda do solenoide: dentro, o campo é linear e a quadratura é exata; fora, a
+     subdivisão usa a distância ao eixo do solenoide. */
+  function lineIntegral(pts, closed, charges, sol) {
+    const N = pts.length, M = closed ? N : N - 1;
+    const segS = new Float64Array(M), segI = new Float64Array(M);
+    let S = 0, I = 0;
+    const useInd = !!(sol && sol.k !== 0);
+    const fS = (x, y) => field(x, y, charges), fI = (x, y) => inducedField(x, y, sol);
+    for (let i = 0; i < M; i++) {
+      const a = pts[i], b = pts[(i + 1) % N];
+      const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy);
+      if (len === 0) continue;
+      if (charges.length) {
+        let dmin = Infinity;
+        for (const c of charges) dmin = Math.min(dmin, distToSegment(c.x, c.y, a, b));
+        segS[i] = glSegment(a.x, a.y, dx, dy, 0, 1, nSub(len, dmin), fS);
+        S += segS[i];
+      }
+      if (useInd) {
+        const cuts = [0];
+        const px = a.x - sol.x, py = a.y - sol.y;
+        const A = dx * dx + dy * dy, B = px * dx + py * dy, C = px * px + py * py - sol.a * sol.a;
+        const disc = B * B - A * C;
+        if (disc > 0) {
+          const s = Math.sqrt(disc);
+          for (const t of [(-B - s) / A, (-B + s) / A]) if (t > 0 && t < 1) cuts.push(t);
+        }
+        cuts.push(1);
+        let acc = 0;
+        for (let j = 0; j + 1 < cuts.length; j++) {
+          const t0 = cuts[j], t1 = cuts[j + 1], tm = (t0 + t1) / 2;
+          const mx = a.x + tm * dx - sol.x, my = a.y + tm * dy - sol.y;
+          if (mx * mx + my * my < sol.a * sol.a) acc += glSegment(a.x, a.y, dx, dy, t0, t1, 1, fI);
+          else {
+            const d = distToSegment(sol.x, sol.y, { x: a.x + t0 * dx, y: a.y + t0 * dy }, { x: a.x + t1 * dx, y: a.y + t1 * dy });
+            acc += glSegment(a.x, a.y, dx, dy, t0, t1, nSub(len * (t1 - t0), d), fI);
+          }
+        }
+        segI[i] = acc;
+        I += acc;
+      }
+    }
+    const seg = new Float64Array(M);
+    for (let i = 0; i < M; i++) seg[i] = segS[i] + segI[i];
+    return { total: S + I, stat: S, ind: I, seg };
+  }
+
+  /* Área da interseção do disco (centro cx, cy, raio r) com a região delimitada pela poligonal
+     fechada, contada com o número de voltas anti-horárias. Exata para a poligonal: soma, aresta
+     por aresta, a área com sinal da interseção do triângulo (centro, p, q) com o disco. */
+  function diskOverlap(pts, cx, cy, r) {
+    const cross = (a, b) => a.x * b.y - a.y * b.x;
+    const arc = (a, b) => 0.5 * r * r * Math.atan2(cross(a, b), a.x * b.x + a.y * b.y);
+    let s = 0;
+    for (let i = 0; i < pts.length; i++) {
+      const a = { x: pts[i].x - cx, y: pts[i].y - cy }, q = pts[(i + 1) % pts.length];
+      const b = { x: q.x - cx, y: q.y - cy };
+      const da = a.x * a.x + a.y * a.y, db = b.x * b.x + b.y * b.y, r2 = r * r;
+      if (da <= r2 && db <= r2) { s += 0.5 * cross(a, b); continue; }
+      const d = { x: b.x - a.x, y: b.y - a.y };
+      const A = d.x * d.x + d.y * d.y, B = a.x * d.x + a.y * d.y, C = da - r2, disc = B * B - A * C;
+      if (A === 0 || disc <= 0) { s += arc(a, b); continue; }
+      const sq = Math.sqrt(disc), t1 = (-B - sq) / A, t2 = (-B + sq) / A;
+      if (t2 <= 0 || t1 >= 1) { s += arc(a, b); continue; }
+      const u1 = Math.max(t1, 0), u2 = Math.min(t2, 1);
+      const p1 = { x: a.x + u1 * d.x, y: a.y + u1 * d.y }, p2 = { x: a.x + u2 * d.x, y: a.y + u2 * d.y };
+      s += arc(a, p1) + 0.5 * cross(p1, p2) + arc(p2, b);
+    }
+    return -s; // troca de sinal: anti-horário visual positivo em coordenadas de tela
+  }
+
+  function segmentsCross(a, b, c, d) {
+    const o = (p, q, r) => (q.x - p.x) * (r.y - p.y) - (q.y - p.y) * (r.x - p.x);
+    const d1 = o(a, b, c), d2 = o(a, b, d), d3 = o(c, d, a), d4 = o(c, d, b);
+    return d1 * d2 < 0 && d3 * d4 < 0;
+  }
+
+  function selfIntersects(pts) {
+    const N = pts.length;
+    for (let i = 0; i < N; i++) {
+      const a = pts[i], b = pts[(i + 1) % N];
+      for (let j = i + 2; j < N; j++) {
+        if (i === 0 && j === N - 1) continue;
+        if (segmentsCross(a, b, pts[j], pts[(j + 1) % N])) return true;
+      }
+    }
+    return false;
+  }
+
+  // Círculo poligonal percorrido no sentido anti-horário visual (ccw = true) ou horário.
+  function circle(cx, cy, R, N, ccw = true) {
+    return Array.from({ length: N }, (_, i) => {
+      const t = (2 * Math.PI * i) / N;
+      return { x: cx + R * Math.cos(t), y: cy - (ccw ? 1 : -1) * R * Math.sin(t) };
+    });
+  }
+
+  return { field, inducedField, totalField, potential, curlZ, catmullRomClosed, catmullRomOpen, ccwArea,
+    windingNumber, distToSegment, minDistToCurve, lineIntegral, diskOverlap, selfIntersects, circle, TWO_PI };
+})();
+if (typeof module !== "undefined") module.exports = Phys;
+
+</script>
+<script>
+(() => {
+  const W = 12, H = 8, PER_SEG = 24;
+  const SOL = { x: 6, y: 4, a: 1.5 };
+  const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+  const $ = id => document.getElementById(id);
+  const fmt = (v, d = 4) => (Math.abs(v) < 0.5 * Math.pow(10, -d) ? 0 : v).toLocaleString("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d });
+
+  const shapeNames = { circle: "círculo", square: "quadrado", ellipse: "elipse", potato: "irregular" };
+  // Pontos de controle percorridos no sentido anti-horário visual (y da tela aponta para baixo).
+  function makeShape(kind, cx = 6, cy = 4, R = 1.8, K = 12) {
+    const pts = [];
+    for (let i = 0; i < K; i++) {
+      const t = (2 * Math.PI * i) / K;
+      let x, y;
+      if (kind === "circle") { x = R * Math.cos(t); y = R * Math.sin(t); }
+      else if (kind === "ellipse") { x = 1.45 * R * Math.cos(t); y = 0.7 * R * Math.sin(t); }
+      else if (kind === "potato") { const r = R * (1 + 0.25 * Math.sin(2 * t) + 0.15 * Math.cos(3 * t)); x = r * Math.cos(t); y = r * Math.sin(t); }
+      else {
+        const s = (i / K) * 4, side = Math.floor(s), f = s - side, a = R * 0.95;
+        const c = [[a, -a], [a, a], [-a, a], [-a, -a]];
+        const p = c[side], q = c[(side + 1) % 4];
+        x = p[0] + (q[0] - p[0]) * f; y = p[1] + (q[1] - p[1]) * f;
+      }
+      pts.push({ x: cx + x, y: cy - y });
+    }
+    return pts;
+  }
+
+  const situations = [
+    { title: "1. Circulação por um caminho qualquer",
+      setup: () => ({ mode: "closed", ind: false, charges: [{ x: 5.4, y: 3.8, lam: 1 }, { x: 8.9, y: 4.8, lam: -1 }, { x: 3.0, y: 6.6, lam: 2 }], shape: "potato", cx: 5.6, cy: 4, R: 1.8 }),
+      text: "Antes de medir, escreva sua previsão para ∮ E·dl ao longo da curva que envolve uma das cargas. Depois deforme a curva para envolver outras cargas, ou nenhuma, inverta o sentido de percurso e registre ao menos quatro medidas. Para explicar o resultado, decomponha E·dl em uma parte radial e uma parte tangencial em relação a cada fio, observando também as cores ao longo da curva." },
+    { title: "2. Dois caminhos entre A e B",
+      setup: () => ({ mode: "open", ind: false, charges: [{ x: 5, y: 4, lam: 1 }, { x: 7.6, y: 4.2, lam: -1 }],
+        A: { x: 1.4, y: 4.4 }, B: { x: 10.6, y: 3.8 }, mid: [[{ x: 3.4, y: 2.0 }, { x: 6.2, y: 1.6 }, { x: 9.0, y: 2.0 }], [{ x: 3.4, y: 6.3 }, { x: 6.3, y: 6.6 }, { x: 9.0, y: 6.0 }]] }),
+      text: "Preveja como W₁ e W₂ devem se comparar e registre os dois valores. Em seguida arraste os pontos de um dos caminhos para que ele passe do outro lado de uma das cargas, preveja de novo e registre. Relacione o que você observou com V(A) − V(B) e com a circulação do laço formado pelos dois caminhos." },
+    { title: "3. Sonda local",
+      setup: () => ({ mode: "probe", ind: false, charges: [{ x: 5, y: 4, lam: 1 }, { x: 8, y: 4.6, lam: -2 }], probe: { x: 2.6, y: 2.4, r: 0.3 } }),
+      text: "A sonda é um círculo pequeno percorrido no sentido anti-horário, e o caderno mostra sua circulação dividida pela área. Leve a sonda a vários pontos, inclusive para perto de uma carga sem colocá-la sobre o fio, reduza o raio e registre os valores. Use o teorema de Stokes para interpretar o que essa razão mede e o que ela indica sobre ∇×E." },
+    { title: "4. Um campo com rotacional",
+      setup: () => ({ mode: "closed", ind: true, k: 1, charges: [{ x: 10.2, y: 1.8, lam: 1 }], shape: "circle", cx: 6, cy: 4, R: 2.2, probe: { x: 6.6, y: 3.6, r: 0.3 } }),
+      text: "O campo induzido está ligado, com k = 1, e há também um fio carregado. Meça a circulação para curvas que envolvam todo o disco do solenoide, apenas parte dele e nenhuma parte; depois troque o instrumento para a sonda local e meça dentro e fora do solenoide. Explique por que esse campo não pode ser eletrostático e qual hipótese do Tomo I ele viola." }
+  ];
+
+  const defaults = () => ({
+    ctrl: makeShape("potato", 6, 4, 1.8), shape: "potato",
+    A: { x: 1.4, y: 4.4 }, B: { x: 10.6, y: 3.8 },
+    mid: [[{ x: 3.4, y: 2.0 }, { x: 6.2, y: 1.6 }, { x: 9.0, y: 2.0 }], [{ x: 3.4, y: 6.3 }, { x: 6.3, y: 6.6 }, { x: 9.0, y: 6.0 }]],
+    probe: { x: 2.6, y: 2.4, r: 0.3 }
+  });
+  const state = { charges: [], mode: "closed", ind: false, k: 1, edited: false, sel: 0, sit: 0, records: [], arrows: true, handles: true, ...defaults() };
+  let calc = null;
+
+  function loadSituation(i) {
+    const s = situations[i].setup(), d = defaults();
+    state.sit = i;
+    state.charges = s.charges.map(c => ({ ...c }));
+    state.mode = s.mode; state.ind = s.ind; state.k = s.k ?? 1;
+    state.shape = s.shape ?? d.shape; state.edited = false;
+    state.ctrl = makeShape(state.shape, s.cx ?? 6, s.cy ?? 4, s.R ?? 1.8);
+    state.A = { ...(s.A ?? d.A) }; state.B = { ...(s.B ?? d.B) };
+    state.mid = (s.mid ?? d.mid).map(m => m.map(p => ({ ...p })));
+    state.probe = { ...(s.probe ?? d.probe) };
+    state.sel = 0;
+    $("modeSel").value = state.mode; $("shapeSel").value = state.shape;
+    $("optInd").checked = state.ind; $("kSl").value = state.k; $("rSl").value = state.probe.r;
+    [...$("sitTabs").children].forEach((b, k) => b.setAttribute("aria-pressed", k === i ? "true" : "false"));
+    $("sitTitle").textContent = situations[i].title;
+    $("sitText").textContent = situations[i].text;
+    update();
+  }
+
+  const sol = () => (state.ind ? { ...SOL, k: state.k } : null);
+  const pathPts = j => Phys.catmullRomOpen([state.A, ...state.mid[j], state.B], PER_SEG);
+  const probePts = () => Phys.circle(state.probe.x, state.probe.y, state.probe.r, 192);
+
+  function recompute() {
+    const s = sol(), ch = state.charges;
+    if (state.mode === "closed") {
+      const pts = Phys.catmullRomClosed(state.ctrl, PER_SEG);
+      const li = Phys.lineIntegral(pts, true, ch, s);
+      let dmin = Infinity; for (const c of ch) dmin = Math.min(dmin, Phys.minDistToCurve(c.x, c.y, pts));
+      const area = Phys.ccwArea(pts);
+      calc = { pts, li, area, dmin, cross: Phys.selfIntersects(pts), ka: s ? s.k * Phys.diskOverlap(pts, SOL.x, SOL.y, SOL.a) : null };
+    } else if (state.mode === "open") {
+      const paths = [pathPts(0), pathPts(1)];
+      const li = paths.map(p => Phys.lineIntegral(p, false, ch, s));
+      let dmin = Infinity; for (const c of ch) for (const p of paths) dmin = Math.min(dmin, Phys.minDistToCurve(c.x, c.y, p, false));
+      const vab = Phys.potential(state.A.x, state.A.y, ch) - Phys.potential(state.B.x, state.B.y, ch);
+      calc = { paths, li, dmin, vab };
+    } else {
+      const pts = probePts(), li = Phys.lineIntegral(pts, true, ch, s), area = Phys.ccwArea(pts);
+      let dmin = Infinity; for (const c of ch) dmin = Math.min(dmin, Phys.minDistToCurve(c.x, c.y, pts));
+      const rc = Math.hypot(state.probe.x - SOL.x, state.probe.y - SOL.y);
+      calc = { pts, li, area, dmin, ratio: li.total / area, curl: Phys.curlZ(state.probe.x, state.probe.y, s),
+        straddle: !!s && Math.abs(rc - SOL.a) < state.probe.r };
+    }
+  }
+
+  // ---------- desenho ----------
+  let scale = 60, dpr = 1, colors = {};
+  function readColors() {
+    const cs = getComputedStyle(document.documentElement);
+    for (const k of ["sheet", "ink", "muted", "grid", "grid-major", "pos", "neg", "field", "accent", "region", "ind"]) colors[k] = cs.getPropertyValue("--" + k).trim();
+  }
+  function resize() {
+    const w = cv.parentElement.clientWidth;
+    dpr = window.devicePixelRatio || 1;
+    scale = w / W;
+    cv.width = Math.round(w * dpr); cv.height = Math.round(H * scale * dpr);
+    cv.style.height = H * scale + "px";
+    draw();
+  }
+  const X = x => x * scale, Y = y => y * scale;
+
+  function arrow(x, y, ux, uy, L, color, alpha, width = 1.4) {
+    const x2 = x + ux * L, y2 = y + uy * L, h = Math.min(6, L * 0.35);
+    ctx.globalAlpha = alpha; ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = width;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x2, y2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - ux * h - uy * h * 0.55, y2 - uy * h + ux * h * 0.55);
+    ctx.lineTo(x2 - ux * h + uy * h * 0.55, y2 - uy * h - ux * h * 0.55);
+    ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+  }
+
+  // Ponta de seta (chevron) no ponto (x, y) da tela, apontando para (ux, uy).
+  function head(x, y, ux, uy, size, color) {
+    ctx.fillStyle = color; ctx.strokeStyle = colors.sheet; ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.moveTo(x + ux * size, y + uy * size);
+    ctx.lineTo(x - ux * size * 0.7 - uy * size * 0.75, y - uy * size * 0.7 + ux * size * 0.75);
+    ctx.lineTo(x - ux * size * 0.3, y - uy * size * 0.3);
+    ctx.lineTo(x - ux * size * 0.7 + uy * size * 0.75, y - uy * size * 0.7 - ux * size * 0.75);
+    ctx.closePath(); ctx.stroke(); ctx.fill();
+  }
+
+  // Pontas de seta igualmente espaçadas ao longo de uma poligonal, no sentido de percurso.
+  function headsAlong(pts, closed, spacing, color, size) {
+    const M = closed ? pts.length : pts.length - 1;
+    let total = 0; for (let i = 0; i < M; i++) { const a = pts[i], b = pts[(i + 1) % pts.length]; total += Math.hypot(b.x - a.x, b.y - a.y); }
+    const n = Math.max(closed ? 3 : 2, Math.round(total / spacing)), step = total / n;
+    let next = step / 2, acc = 0;
+    for (let i = 0; i < M && next < total; i++) {
+      const a = pts[i], b = pts[(i + 1) % pts.length], L = Math.hypot(b.x - a.x, b.y - a.y);
+      while (L > 0 && next <= acc + L && next < total) {
+        const t = (next - acc) / L;
+        head(X(a.x + t * (b.x - a.x)), Y(a.y + t * (b.y - a.y)), (b.x - a.x) / L, (b.y - a.y) / L, size, color);
+        next += step;
+      }
+      acc += L;
+    }
+  }
+
+  // Poligonal colorida trecho a trecho pelo sinal de E·dl; o tracejado é contínuo entre trechos.
+  function strokeSigned(pts, closed, seg, dash) {
+    const M = closed ? pts.length : pts.length - 1;
+    const col = i => { const a = pts[i], b = pts[(i + 1) % pts.length], len = Math.hypot(b.x - a.x, b.y - a.y) || 1, d = seg[i] / len; return Math.abs(d) < 1e-4 ? colors.muted : d > 0 ? colors.pos : colors.neg; };
+    ctx.lineWidth = 3.5; ctx.lineCap = dash ? "butt" : "round"; ctx.lineJoin = "round";
+    let i = 0, run = 0;
+    while (i < M) {
+      const c = col(i);
+      ctx.strokeStyle = c; ctx.setLineDash(dash || []); ctx.lineDashOffset = -run;
+      ctx.beginPath(); ctx.moveTo(X(pts[i].x), Y(pts[i].y));
+      while (i < M && col(i) === c) {
+        const b = pts[(i + 1) % pts.length];
+        run += Math.hypot(X(b.x) - X(pts[i].x), Y(b.y) - Y(pts[i].y));
+        ctx.lineTo(X(b.x), Y(b.y)); i++;
+      }
+      ctx.stroke();
+    }
+    ctx.setLineDash([]); ctx.lineDashOffset = 0;
+  }
+
+  function handle(p, color) {
+    ctx.fillStyle = colors.sheet; ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.beginPath();
+    ctx.arc(X(p.x), Y(p.y), Math.max(4, Math.min(6, scale * 0.09)), 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+  }
+  function label(text, x, y, color, font) {
+    ctx.font = font; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.lineWidth = 3; ctx.strokeStyle = colors.sheet; ctx.strokeText(text, x, y);
+    ctx.fillStyle = color; ctx.fillText(text, x, y);
+  }
+
+  function drawSolenoid() {
+    const s = sol(); if (!s) return;
+    const cx = X(SOL.x), cy = Y(SOL.y), R = SOL.a * scale;
+    ctx.globalAlpha = 0.08; ctx.fillStyle = colors.ind; ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2 * Math.PI); ctx.fill(); ctx.globalAlpha = 1;
+    ctx.strokeStyle = colors.ind; ctx.lineWidth = 2; ctx.setLineDash([7, 5]); ctx.beginPath(); ctx.arc(cx, cy, R, 0, 2 * Math.PI); ctx.stroke(); ctx.setLineDash([]);
+    // sentido de circulação do campo induzido, sobre a borda do solenoide
+    if (s.k !== 0) {
+      const sg = Math.sign(s.k);
+      for (let j = 0; j < 4; j++) {
+        const t = Math.PI / 4 + j * Math.PI / 2;      // ângulo matemático (anti-horário visual)
+        const px = cx + R * Math.cos(t), py = cy - R * Math.sin(t);
+        head(px, py, -sg * Math.sin(t), -sg * Math.cos(t), 7, colors.ind);
+      }
+    }
+    // marca do eixo do solenoide (B perpendicular à tela)
+    ctx.strokeStyle = colors.ind; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.arc(cx, cy, 5, 0, 2 * Math.PI); ctx.stroke();
+    ctx.fillStyle = colors.ind; ctx.beginPath(); ctx.arc(cx, cy, 1.6, 0, 2 * Math.PI); ctx.fill();
+    label(scale < 45 ? "solenoide" : "solenoide (Tomo II)", cx, cy + R * 0.55, colors.ind, "500 " + (scale < 45 ? 10 : 12) + "px IBM Plex Mono, monospace");
+  }
+
+  function draw() {
+    if (!calc) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = colors.sheet; ctx.fillRect(0, 0, W * scale, H * scale);
+    for (let g = 0; g <= W * 2; g++) { ctx.strokeStyle = g % 2 ? colors.grid : colors["grid-major"]; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(Math.round(X(g / 2)) + 0.5, 0); ctx.lineTo(Math.round(X(g / 2)) + 0.5, H * scale); ctx.stroke(); }
+    for (let g = 0; g <= H * 2; g++) { ctx.strokeStyle = g % 2 ? colors.grid : colors["grid-major"]; ctx.beginPath(); ctx.moveTo(0, Math.round(Y(g / 2)) + 0.5); ctx.lineTo(W * scale, Math.round(Y(g / 2)) + 0.5); ctx.stroke(); }
+    if (state.mode === "closed") {
+      ctx.fillStyle = colors.region; ctx.beginPath();
+      calc.pts.forEach((p, i) => i ? ctx.lineTo(X(p.x), Y(p.y)) : ctx.moveTo(X(p.x), Y(p.y))); ctx.closePath(); ctx.fill();
+    }
+    drawSolenoid();
+    const s = sol();
+    if (state.arrows) {
+      for (let gx = 0.25; gx < W; gx += 0.5) for (let gy = 0.25; gy < H; gy += 0.5) {
+        if (state.charges.some(c => Math.hypot(c.x - gx, c.y - gy) < 0.3)) continue;
+        const [ex, ey] = Phys.totalField(gx, gy, state.charges, s); const m = Math.hypot(ex, ey); if (m < 1e-6) continue;
+        const L = 0.4 * (1 - Math.exp(-m / 0.12));
+        arrow(X(gx - ex / m * L / 2), Y(gy - ey / m * L / 2), ex / m, ey / m, L * scale, colors.field, 0.35 + 0.5 * (L / 0.4));
+      }
+    }
+    const hs = Math.max(5, Math.min(7.5, scale * 0.11));
+    if (state.mode === "closed") {
+      strokeSigned(calc.pts, true, calc.li.seg, null);
+      headsAlong(calc.pts, true, 1.1, colors.ink, hs);
+      if (state.handles) state.ctrl.forEach(p => handle(p, colors.accent));
+    } else if (state.mode === "open") {
+      strokeSigned(calc.paths[1], false, calc.li[1].seg, [9, 6]);
+      strokeSigned(calc.paths[0], false, calc.li[0].seg, null);
+      calc.paths.forEach(p => headsAlong(p, false, 1.4, colors.ink, hs));
+      if (state.handles) state.mid.forEach(m => m.forEach(p => handle(p, colors.accent)));
+      const f = "600 " + (scale < 45 ? 11 : 13) + "px IBM Plex Mono, monospace";
+      state.mid.forEach((m, j) => { const p = m[1], q = m[0]; const ox = p.x - (q.x + m[2].x) / 2, oy = p.y - (q.y + m[2].y) / 2, on = Math.hypot(ox, oy) || 1; label(String(j + 1), X(p.x + ox / on * 0.38), Y(p.y + oy / on * 0.38), colors.ink, f); });
+      for (const [p, t] of [[state.A, "A"], [state.B, "B"]]) {
+        const r = Math.max(5, Math.min(7, scale * 0.1));
+        ctx.fillStyle = colors.ink; ctx.fillRect(X(p.x) - r, Y(p.y) - r, 2 * r, 2 * r);
+        label(t, X(p.x), Y(p.y) - r - 10, colors.ink, f);
+      }
+    } else {
+      const P = state.probe, rp = P.r * scale;
+      ctx.fillStyle = colors.region; ctx.beginPath(); ctx.arc(X(P.x), Y(P.y), rp, 0, 2 * Math.PI); ctx.fill();
+      strokeSigned(calc.pts, true, calc.li.seg, null);
+      if (rp > 14) headsAlong(calc.pts, true, Math.max(0.2, P.r * 2), colors.ink, Math.min(hs, rp * 0.3));
+      // retículo do centro, sempre visível mesmo com raio pequeno
+      const arm = Math.max(rp + 6, 12);
+      ctx.strokeStyle = colors.accent; ctx.lineWidth = 1.5; ctx.beginPath();
+      ctx.moveTo(X(P.x) - arm, Y(P.y)); ctx.lineTo(X(P.x) - rp - 3, Y(P.y)); ctx.moveTo(X(P.x) + rp + 3, Y(P.y)); ctx.lineTo(X(P.x) + arm, Y(P.y));
+      ctx.moveTo(X(P.x), Y(P.y) - arm); ctx.lineTo(X(P.x), Y(P.y) - rp - 3); ctx.moveTo(X(P.x), Y(P.y) + rp + 3); ctx.lineTo(X(P.x), Y(P.y) + arm);
+      ctx.stroke();
+      ctx.fillStyle = colors.accent; ctx.beginPath(); ctx.arc(X(P.x), Y(P.y), 1.8, 0, 2 * Math.PI); ctx.fill();
+    }
+    state.charges.forEach((c, i) => {
+      const col = c.lam > 0 ? colors.pos : c.lam < 0 ? colors.neg : colors.muted;
+      const r = Math.max(7, Math.min(18, (0.17 + 0.03 * Math.abs(c.lam)) * scale));
+      if (i === state.sel) { ctx.strokeStyle = colors.ink; ctx.lineWidth = 2; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.arc(X(c.x), Y(c.y), r + 5, 0, 2 * Math.PI); ctx.stroke(); ctx.setLineDash([]); }
+      ctx.fillStyle = col; ctx.beginPath(); ctx.arc(X(c.x), Y(c.y), r, 0, 2 * Math.PI); ctx.fill();
+      ctx.fillStyle = colors.sheet; ctx.font = "600 " + Math.round(Math.max(11, Math.min(15, r * 1.2))) + "px IBM Plex Sans, system-ui, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(c.lam > 0 ? "+" : c.lam < 0 ? "−" : "0", X(c.x), Y(c.y) + 1);
+      ctx.fillStyle = colors.ink; ctx.font = "500 " + (scale < 45 ? 10 : 12) + "px IBM Plex Mono, monospace";
+      ctx.fillText("λ=" + fmt(c.lam, 1), X(c.x), Y(c.y) + r + 12);
+    });
+    ctx.strokeStyle = colors.ink; ctx.lineWidth = 2; const sx = W * scale - X(1) - 14, sy = H * scale - 16;
+    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + X(1), sy); ctx.moveTo(sx, sy - 4); ctx.lineTo(sx, sy + 4); ctx.moveTo(sx + X(1), sy - 4); ctx.lineTo(sx + X(1), sy + 4); ctx.stroke();
+    ctx.fillStyle = colors.ink; ctx.font = "500 12px IBM Plex Mono, monospace"; ctx.textAlign = "center"; ctx.textBaseline = "bottom"; ctx.fillText("1 u", sx + X(1) / 2, sy - 5);
+  }
+
+  // ---------- painel ----------
+  const senseName = (area, cross) => cross ? "a curva se cruza" : area >= 0 ? "anti-horário" : "horário";
+  const hints = {
+    closed: "Arraste uma carga para movê-la, um ponto de controle para deformar a curva, ou o interior da curva para deslocá-la inteira. As pontas de seta sobre a curva indicam o sentido de percurso. Toque numa carga para ajustar λ.",
+    open: "Arraste A, B ou os pontos de controle de cada caminho. Os dois caminhos são percorridos de A para B. Toque numa carga para ajustar λ.",
+    probe: "Arraste a sonda pelo retículo ou pelo interior e ajuste o raio no caderno. A sonda é sempre percorrida no sentido anti-horário. Toque numa carga para ajustar λ."
+  };
+  function panel() {
+    const s = sol(), m = state.mode, msgs = [];
+    $("roClosed").hidden = m !== "closed"; $("roOpen").hidden = m !== "open"; $("roProbe").hidden = m !== "probe";
+    $("shapeBox").hidden = m !== "closed"; $("flip").hidden = m !== "closed";
+    $("rBox").hidden = m !== "probe"; $("kBox").hidden = !s;
+    $("indBanner").hidden = !s; $("lgInd").hidden = !s; $("lgPath2").hidden = m !== "open";
+    $("lgField").textContent = s ? "vetor E total: fios + induzido (comprimento comprimido)" : "vetor E (comprimento comprimido)";
+    $("hint").textContent = hints[m];
+    document.querySelectorAll("#roClosed [data-ind]").forEach(el => { el.hidden = !s; });
+    $("kOut").textContent = fmt(state.k, 1);
+    $("rOut").textContent = fmt(state.probe.r, 2) + " u";
+    if (m === "closed") {
+      $("rCirc").textContent = fmt(calc.li.total);
+      $("rCircS").textContent = fmt(calc.li.stat); $("rCircI").textContent = fmt(calc.li.ind);
+      $("rKA").textContent = s ? fmt(calc.ka) : "—";
+      $("rArea").textContent = fmt(Math.abs(calc.area), 3) + " u²";
+      $("rSense").textContent = senseName(calc.area, calc.cross);
+      if (calc.dmin < 0.06) msgs.push("Há uma carga sobre a curva (a menos de 0,06 u). O campo diverge no fio e o valor numérico deixa de ser confiável.");
+      if (calc.cross) msgs.push("A curva se cruza e já não delimita uma única região; a área com sinal e a previsão k·A contam quantas voltas a curva dá em torno de cada trecho do plano.");
+    } else if (m === "open") {
+      const [a, b] = calc.li;
+      $("rW1").textContent = fmt(a.total); $("rW2").textContent = fmt(b.total);
+      $("rW12").textContent = fmt(a.total - b.total); $("rVAB").textContent = fmt(calc.vab);
+      $("vNote").textContent = s ? "somente a parte dos fios, com V = −(λ/2π) ln r; o campo induzido não admite potencial" : "calculado com V = −(λ/2π) ln r para cada fio; a constante aditiva se cancela na diferença";
+      if (calc.dmin < 0.06) msgs.push("Há uma carga sobre um dos caminhos (a menos de 0,06 u). O campo diverge no fio e o valor numérico deixa de ser confiável.");
+      if (s) msgs.push("Com o campo induzido ligado, W₁ e W₂ incluem a contribuição de um campo não eletrostático, e V(A) − V(B) refere-se apenas aos fios.");
+    } else {
+      $("rRatio").textContent = fmt(calc.ratio);
+      $("rPC").textContent = fmt(calc.li.total, 6);
+      $("rPA").textContent = fmt(calc.area, 4) + " u²";
+      $("rCurl").textContent = fmt(calc.curl);
+      if (calc.dmin < 0.03) msgs.push("Há uma carga sobre a borda da sonda. O campo diverge no fio e o valor numérico deixa de ser confiável.");
+      if (calc.straddle) msgs.push("A sonda cruza a borda do solenoide; a razão medida é a média de (∇×E)_z sobre o disco da sonda, que difere do valor no centro.");
+    }
+    $("warn").hidden = !msgs.length; $("warn").textContent = msgs.join(" ");
+    const c = state.charges[state.sel];
+    $("lamBox").hidden = !c; $("noCharge").hidden = !!c;
+    if (c) { $("lam").value = c.lam; $("lamOut").textContent = fmt(c.lam, 1) + " λ₀"; }
+  }
+
+  function update() { recompute(); draw(); panel(); }
+
+  // ---------- interação ----------
+  function toWorld(e) { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) / scale, y: (e.clientY - r.top) / scale }; }
+  function handles() {
+    if (state.mode === "closed") return state.handles ? state.ctrl.map((p, i) => ({ p, ref: { kind: "ctrl", i } })) : [];
+    if (state.mode === "open") {
+      const out = [{ p: state.A, ref: { kind: "A" } }, { p: state.B, ref: { kind: "B" } }];
+      if (state.handles) state.mid.forEach((m, j) => m.forEach((p, i) => out.push({ p, ref: { kind: "mid", j, i } })));
+      return out;
+    }
+    return [];
+  }
+  let drag = null;
+  cv.addEventListener("pointerdown", e => {
+    const p = toWorld(e), hr = e.pointerType === "touch" ? 0.5 : 0.3;
+    let best = null, bd = Infinity;
+    state.charges.forEach((c, i) => { const d = Math.hypot(c.x - p.x, c.y - p.y); if (d < hr && d < bd) { bd = d; best = { kind: "charge", i }; } });
+    if (!best) handles().forEach(h => { const d = Math.hypot(h.p.x - p.x, h.p.y - p.y); if (d < hr * 0.85 && d < bd) { bd = d; best = h.ref; } });
+    if (!best && state.mode === "probe" && Math.hypot(state.probe.x - p.x, state.probe.y - p.y) < Math.max(state.probe.r, hr)) best = { kind: "probe", last: p };
+    if (!best && state.mode === "closed" && Phys.windingNumber(p.x, p.y, calc.pts) !== 0) best = { kind: "curve", last: p };
+    if (!best) return;
+    if (best.kind === "charge") state.sel = best.i;
+    drag = best; cv.setPointerCapture(e.pointerId); cv.className = "grabbing"; e.preventDefault(); update();
+  });
+  cv.addEventListener("pointermove", e => {
+    const p = toWorld(e);
+    if (!drag) {
+      const over = state.charges.some(c => Math.hypot(c.x - p.x, c.y - p.y) < 0.3) || handles().some(h => Math.hypot(h.p.x - p.x, h.p.y - p.y) < 0.25)
+        || (state.mode === "probe" && Math.hypot(state.probe.x - p.x, state.probe.y - p.y) < Math.max(state.probe.r, 0.3));
+      cv.className = over ? "grab" : ""; return;
+    }
+    const cx = Math.max(0.1, Math.min(W - 0.1, p.x)), cy = Math.max(0.1, Math.min(H - 0.1, p.y));
+    if (drag.kind === "charge") { state.charges[drag.i].x = cx; state.charges[drag.i].y = cy; }
+    else if (drag.kind === "ctrl") { state.ctrl[drag.i] = { x: cx, y: cy }; state.edited = true; }
+    else if (drag.kind === "A") state.A = { x: cx, y: cy };
+    else if (drag.kind === "B") state.B = { x: cx, y: cy };
+    else if (drag.kind === "mid") state.mid[drag.j][drag.i] = { x: cx, y: cy };
+    else if (drag.kind === "probe") { state.probe.x = cx; state.probe.y = cy; }
+    else { const dx = p.x - drag.last.x, dy = p.y - drag.last.y; state.ctrl = state.ctrl.map(q => ({ x: q.x + dx, y: q.y + dy })); drag.last = p; }
+    update();
+  });
+  const endDrag = () => { drag = null; cv.className = ""; };
+  cv.addEventListener("pointerup", endDrag); cv.addEventListener("pointercancel", endDrag);
+
+  function distToInstrument(x, y) {
+    if (state.mode === "closed") return Phys.minDistToCurve(x, y, calc.pts);
+    if (state.mode === "open") return Math.min(...calc.paths.map(p => Phys.minDistToCurve(x, y, p, false)));
+    return Math.hypot(x - state.probe.x, y - state.probe.y) - state.probe.r;
+  }
+  function addCharge(lam) {
+    let x, y, tries = 0;
+    do { x = 1 + Math.random() * (W - 2); y = 1 + Math.random() * (H - 2); tries++; }
+    while (tries < 50 && (state.charges.some(c => Math.hypot(c.x - x, c.y - y) < 0.8) || distToInstrument(x, y) < 0.4));
+    state.charges.push({ x, y, lam }); state.sel = state.charges.length - 1; update();
+  }
+  $("addPos").onclick = () => addCharge(1);
+  $("addNeg").onclick = () => addCharge(-1);
+  $("delCharge").onclick = () => { if (!state.charges.length) return; state.charges.splice(state.sel, 1); state.sel = Math.max(0, state.sel - 1); update(); };
+  $("lam").oninput = e => { const c = state.charges[state.sel]; if (c) { c.lam = parseFloat(e.target.value); update(); } };
+  $("kSl").oninput = e => { state.k = parseFloat(e.target.value); update(); };
+  $("rSl").oninput = e => { state.probe.r = parseFloat(e.target.value); update(); };
+  $("modeSel").onchange = e => { state.mode = e.target.value; update(); };
+  $("optInd").onchange = e => { state.ind = e.target.checked; update(); };
+  $("flip").onclick = () => { state.ctrl.reverse(); update(); };
+  $("shapeSel").onchange = e => {
+    const cx = state.ctrl.reduce((s, q) => s + q.x, 0) / state.ctrl.length, cy = state.ctrl.reduce((s, q) => s + q.y, 0) / state.ctrl.length;
+    const cw = Phys.ccwArea(state.ctrl) < 0;
+    state.shape = e.target.value; state.edited = false; state.ctrl = makeShape(state.shape, cx, cy);
+    if (cw) state.ctrl.reverse();
+    update();
+  };
+  for (const [id, key] of [["optArrows", "arrows"], ["optHandles", "handles"]])
+    $(id).onchange = e => { state[key] = e.target.checked; draw(); };
+
+  situations.forEach((s, i) => { const b = document.createElement("button"); b.type = "button"; b.textContent = "S" + (i + 1); b.title = s.title; b.onclick = () => loadSituation(i); $("sitTabs").appendChild(b); });
+
+  // ---------- registro ----------
+  const EMPTY = '<tr><td colspan="8" style="text-align:left;font-family:var(--body);color:var(--muted)">Nenhuma medida registrada. Faça uma previsão, ajuste a bancada e toque em Registrar medida.</td></tr>';
+  function renderRecords() {
+    const tb = $("recBody");
+    if (!state.records.length) { tb.innerHTML = EMPTY; return; }
+    tb.innerHTML = "";
+    state.records.forEach(r => {
+      const tr = document.createElement("tr");
+      [r.k, "S" + r.sit, r.inst, r.sense, r.kv == null ? "—" : fmt(r.kv, 1), r.area == null ? "—" : fmt(r.area, 3), fmt(r.val), r.ref == null ? "—" : fmt(r.ref)]
+        .forEach(v => { const td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+      tb.appendChild(tr);
+    });
+    tb.parentElement.parentElement.scrollTop = 1e6;
+  }
+  $("record").onclick = () => {
+    const kv = state.ind ? state.k : null, base = { sit: state.sit + 1, kv };
+    const push = r => state.records.push({ k: state.records.length + 1, ...base, ...r });
+    if (state.mode === "closed")
+      push({ inst: "Curva (" + shapeNames[state.shape] + (state.edited ? ", editada" : "") + ")", sense: senseName(calc.area, calc.cross), area: Math.abs(calc.area), val: calc.li.total, ref: state.ind ? calc.ka : null });
+    else if (state.mode === "open")
+      calc.li.forEach((li, j) => push({ inst: "Caminho " + (j + 1), sense: "A → B", area: null, val: li.total, ref: calc.vab }));
+    else
+      push({ inst: "Sonda r=" + fmt(state.probe.r, 2) + " (" + fmt(state.probe.x, 2) + "; " + fmt(state.probe.y, 2) + ")", sense: "anti-horário", area: calc.area, val: calc.ratio, ref: calc.curl });
+    renderRecords();
+  };
+  $("clearRec").onclick = () => { state.records = []; renderRecords(); $("csvBox").hidden = true; $("copyMsg").hidden = true; };
+  function csv() {
+    const head = "medida;situacao;instrumento;sentido;k;area;valor;referencia";
+    return [head, ...state.records.map(r => [r.k, r.sit, r.inst, r.sense, r.kv == null ? "" : fmt(r.kv, 1), r.area == null ? "" : fmt(r.area, 6), fmt(r.val, 6), r.ref == null ? "" : fmt(r.ref, 6)].join(";"))].join("\n");
+  }
+  $("copyCsv").onclick = () => {
+    const text = csv(), box = $("csvBox"), msg = $("copyMsg");
+    const fallback = () => { box.value = text; box.hidden = false; box.focus(); box.select(); msg.hidden = false; msg.textContent = "Selecione o texto abaixo e copie (Ctrl+C ou toque longo)."; };
+    try {
+      navigator.clipboard.writeText(text).then(() => { msg.hidden = false; msg.textContent = "Tabela copiada. Cole numa planilha; as colunas são separadas por ponto e vírgula."; box.hidden = true; }, fallback);
+    } catch (err) { fallback(); }
+  };
+  renderRecords();
+
+  // ---------- teste de verificação ao carregar ----------
+  (function selfTest() {
+    const S = { x: 6, y: 4, a: 1.5, k: 1 };
+    const a = Phys.lineIntegral(Phys.circle(6, 4, 1.5, 720), true, [{ x: 6.4, y: 4.2, lam: 1 }], null).total;
+    const b = Phys.lineIntegral(Phys.circle(6, 4, 2, 4096), true, [], S).total;
+    const pp = Phys.circle(6.5, 4.2, 0.05, 192), c = Phys.lineIntegral(pp, true, [], S).total / Phys.ccwArea(pp);
+    const ok = Math.abs(a) < 1e-9 && Math.abs(b - Math.PI * 2.25) < 1e-6 && Math.abs(c - 1) < 1e-6;
+    $("verify").innerHTML = "<span>Teste de verificação ao abrir: <b>" + (ok ? "aprovado" : "reprovado") + "</b></span>" +
+      "<span>fio λ = 1 dentro de um círculo de raio 1,5 u: ∮ E·dl = " + fmt(a, 6) + " (previsto 0)</span>" +
+      "<span>campo induzido, k = 1, círculo de raio 2 u em torno do solenoide: ∮ E·dl = " + fmt(b, 6) + " (previsto k π a² = " + fmt(Math.PI * 2.25, 6) + ")</span>" +
+      "<span>sonda de raio 0,05 u dentro do solenoide: ∮ E·dl ÷ área = " + fmt(c, 6) + " (previsto k = 1)</span>";
+  })();
+
+  // tema
+  const mq = window.matchMedia("(prefers-color-scheme: dark)");
+  const retheme = () => { readColors(); draw(); };
+  mq.addEventListener ? mq.addEventListener("change", retheme) : mq.addListener(retheme);
+  new MutationObserver(retheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  readColors();
+  loadSituation(0);
+  window.addEventListener("resize", resize);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => draw());
+  resize();
+})();
+</script>
+
+</body>
+</html>

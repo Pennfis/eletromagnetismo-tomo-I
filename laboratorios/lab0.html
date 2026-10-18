@@ -1,0 +1,871 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Escalas e interações</title>
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,'Segoe UI',sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,600&display=swap">
+<style>
+/* Layout: bancada — escala quadriculada e instrumentos à esquerda, caderno de medidas à direita; empilha no celular. */
+:root {
+  --paper: #f3f5f6;
+  --sheet: #fbfcfc;
+  --ink: #17232b;
+  --muted: #5a6a74;
+  --grid: #d9e2e7;
+  --grid-major: #c3d0d7;
+  --rule: #d3dce1;
+  --pos: #c2410c;
+  --neg: #1d5fbf;
+  --field: #6d7f8a;
+  --accent: #0f6e6a;
+  --grav: #3f4fa0;
+  --em: #0f6e6a;
+  --strong: #b4451a;
+  --weak: #7a3fb0;
+  --sun: #c98a12;
+  --warn-bg: #fff4e0;
+  --warn-ink: #7a4b00;
+  --region: rgba(15, 110, 106, 0.07);
+  --display: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0f171c; --sheet: #142028; --ink: #e3ebef; --muted: #93a5b0;
+    --grid: #1d2c35; --grid-major: #283a45; --rule: #2a3a44;
+    --pos: #f2814f; --neg: #6aa7ff; --field: #8296a2; --accent: #4fc2b8;
+    --grav: #9aa8f0; --em: #4fc2b8; --strong: #f2814f; --weak: #c39af0; --sun: #f0bb4a;
+    --warn-bg: #3a2a0d; --warn-ink: #f5c97a; --region: rgba(79, 194, 184, 0.08);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0f171c; --sheet: #142028; --ink: #e3ebef; --muted: #93a5b0;
+  --grid: #1d2c35; --grid-major: #283a45; --rule: #2a3a44;
+  --pos: #f2814f; --neg: #6aa7ff; --field: #8296a2; --accent: #4fc2b8;
+  --grav: #9aa8f0; --em: #4fc2b8; --strong: #f2814f; --weak: #c39af0; --sun: #f0bb4a;
+  --warn-bg: #3a2a0d; --warn-ink: #f5c97a; --region: rgba(79, 194, 184, 0.08);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  background: var(--paper); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 32px;
+}
+.wrap { max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+header { display: flex; flex-direction: column; gap: 6px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--display); font-weight: 600; font-size: clamp(26px, 4vw, 36px); line-height: 1.15; margin: 0; text-wrap: balance; }
+.model { max-width: 78ch; color: var(--muted); margin: 0; }
+.model b { color: var(--ink); font-weight: 600; }
+.bench { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 18px; align-items: start; }
+@media (max-width: 900px) { .bench { grid-template-columns: minmax(0, 1fr); } }
+.board { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.canvas-box { background: var(--sheet); border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; touch-action: none; }
+canvas { display: block; width: 100%; height: auto; }
+#cv { cursor: grab; } #cv.grabbing { cursor: grabbing; }
+#cv:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+@media (max-width: 600px) { .toolbar .sep { display: none; } }
+.toolbar .sep { width: 1px; align-self: stretch; background: var(--rule); margin: 0 4px; }
+button, select, input[type=number], input[type=text] { font: inherit; font-size: 14px; color: var(--ink); background: var(--sheet); border: 1px solid var(--rule); border-radius: 5px; padding: 6px 11px; }
+button, select { cursor: pointer; }
+button:hover { border-color: var(--muted); }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--sheet); font-weight: 500; }
+input[type=number] { width: 78px; font-family: var(--mono); padding: 5px 8px; }
+label.check { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--muted); cursor: pointer; }
+.legend { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; color: var(--muted); }
+.legend span::before { content: ""; display: inline-block; width: 14px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; background: currentColor; opacity: 0.55; }
+.legend .lg { color: var(--grav); } .legend .le { color: var(--em); } .legend .ls { color: var(--strong); }
+.legend .lw { color: var(--weak); } .legend .lw::before { background: none; border: 1.5px dashed currentColor; opacity: 1; }
+.legend span { font-weight: 500; }
+.notebook, .card { background: var(--sheet); border: 1px solid var(--rule); border-radius: 6px; display: flex; flex-direction: column; min-width: 0; }
+.notebook section, .card section { padding: 14px 16px; border-top: 1px solid var(--rule); display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.notebook section:first-child, .card section:first-child { border-top: none; }
+.card .split { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); border-top: 1px solid var(--rule); }
+.card .split > section { border-top: none; }
+.card .split > section + section { border-left: 1px solid var(--rule); }
+@media (max-width: 720px) { .card .split { grid-template-columns: minmax(0, 1fr); } .card .split > section + section { border-left: none; border-top: 1px solid var(--rule); } }
+h2 { font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 0; }
+h3 { font-family: var(--display); font-size: 19px; font-weight: 600; margin: 0; line-height: 1.25; }
+.readout { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: baseline; margin: 0; }
+.readout dt { font-size: 14px; } .readout dd { margin: 0; font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 16px; text-align: right; }
+.readout dd.big { font-size: 22px; font-weight: 500; color: var(--accent); }
+.readout dt small { display: block; color: var(--muted); font-size: 12px; }
+.station-name { font-family: var(--display); font-size: 20px; font-weight: 600; margin: 0; }
+.swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: 0; }
+.warn { background: var(--warn-bg); color: var(--warn-ink); border-radius: 5px; padding: 8px 10px; font-size: 13px; }
+.seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.seg button { font-size: 13px; padding: 4px 10px; }
+.seg button[aria-pressed="true"], .sit-tabs button[aria-pressed="true"] { background: var(--ink); color: var(--sheet); border-color: var(--ink); }
+.sit-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.sit-tabs button { font-family: var(--mono); font-size: 13px; padding: 4px 10px; }
+.sit-title { font-weight: 600; margin: 0; }
+.sit-text { margin: 0; font-size: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.slider { display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.slider .top { display: flex; justify-content: space-between; gap: 8px; }
+.slider output { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+.hint { font-size: 12px; color: var(--muted); margin: 0; }
+.formula { font-family: var(--mono); font-size: 13px; color: var(--ink); background: var(--paper); border-radius: 4px; padding: 6px 8px; margin: 0; overflow-x: auto; }
+.table-box { overflow-x: auto; max-height: 300px; overflow-y: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 4px 6px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+th.l, td.l { text-align: left; }
+td.wrap { white-space: normal; min-width: 150px; font-family: var(--body); }
+th { font-weight: 500; color: var(--muted); font-size: 12px; position: sticky; top: 0; background: var(--sheet); }
+td { font-family: var(--mono); }
+td input[type=text] { width: 100%; min-width: 160px; font-size: 12px; padding: 3px 6px; font-family: var(--body); }
+textarea { width: 100%; min-height: 90px; font-family: var(--mono); font-size: 12px; background: var(--paper); color: var(--ink); border: 1px solid var(--rule); border-radius: 5px; padding: 6px; }
+.sources { font-size: 12px; color: var(--muted); margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 3px; }
+.sources a { color: var(--accent); }
+details summary { cursor: pointer; font-size: 13px; color: var(--muted); }
+.verify { font-family: var(--mono); font-size: 12px; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 12px; display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.verify b { color: var(--accent); font-weight: 500; }
+footer { font-size: 12px; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Eletromagnetismo · Tomo I · Módulo 0 · Laboratório 0</div>
+    <h1>Escalas e interações</h1>
+    <p class="model"><b>Modelo.</b> Partículas pontuais com as constantes CODATA 2018 e corpos tratados como esferas uniformes de matéria tipo hidrogênio, com carga em excesso <b>Q = f (M/mₚ) e</b>. A forma esférica aparece quando a pressão no centro, <b>P꜀ = (2π/3) G ρ² R²</b>, supera a resistência à compressão σ do material. É um critério de ordem de grandeza, que ignora rotação, temperatura, porosidade e o escoamento lento dos materiais, e os tamanhos das estações são valores típicos.</p>
+  </header>
+
+  <div class="bench">
+    <div class="board">
+      <div class="toolbar" role="toolbar" aria-label="Navegação na escala">
+        <button type="button" id="zoomOut" aria-label="Afastar">−</button>
+        <button type="button" id="zoomIn" aria-label="Aproximar">+</button>
+        <button type="button" id="fitAll">Ver tudo</button>
+        <span class="sep" aria-hidden="true"></span>
+        <button type="button" id="prevSt" aria-label="Estação anterior (maior)">◀ Estação</button>
+        <button type="button" id="nextSt" aria-label="Próxima estação (menor)">Estação ▶</button>
+        <span class="sep" aria-hidden="true"></span>
+        <button type="button" id="goRstar">Ir até R*</button>
+      </div>
+      <div class="canvas-box"><canvas id="cv" tabindex="0" aria-label="Escala logarítmica de comprimentos de 10 elevado a 27 metros até 10 elevado a menos 19 metros, com estações e faixas de interação dominante. Arraste para deslocar, use a roda ou pinça para ampliar, setas do teclado para deslocar e mais ou menos para ampliar."></canvas></div>
+      <div class="legend" aria-label="Legenda das faixas">
+        <span class="lg">Gravitação</span>
+        <span class="le">Eletromagnetismo</span>
+        <span class="ls">Força forte</span>
+        <span class="lw">Fraca: decaimentos, não estrutura</span>
+      </div>
+      <p class="hint">Os maiores comprimentos ficam à esquerda. Arraste a escala, gire a roda do mouse ou faça pinça para ampliar, e toque numa estação para lê-la no caderno. A fronteira entre gravitação e eletromagnetismo é o R* calculado com os valores de ρ e σ em Ajustes; o limite entre eletromagnetismo e força forte é o raio de um núcleo pesado, R = r₀A^(1/3) com A = 238.</p>
+
+      <div class="card" id="cardRatio">
+        <section><h3>Quão fraca é a gravidade</h3></section>
+        <div class="split">
+          <section aria-labelledby="h-pair">
+            <h2 id="h-pair">Calculadora Fₑ/F_g</h2>
+            <div class="seg" id="pairSeg" role="group" aria-label="Par de partículas">
+              <button type="button" data-pair="ee" aria-pressed="true">elétron-elétron</button>
+              <button type="button" data-pair="pp" aria-pressed="false">próton-próton</button>
+              <button type="button" data-pair="ep" aria-pressed="false">elétron-próton</button>
+            </div>
+            <div class="row"><label for="predExp">Sua previsão: Fₑ/F_g ≈ 10^</label><input type="number" id="predExp" step="1" min="-200" max="200" inputmode="numeric"><button type="button" class="primary" id="calcRatio">Calcular</button></div>
+            <div class="slider">
+              <div class="top"><label for="rLog">Distância r entre as partículas</label><output id="rOut" for="rLog">—</output></div>
+              <input type="range" id="rLog" min="-15" max="3" step="0.05" value="-10">
+            </div>
+            <dl class="readout">
+              <dt>Fₑ = k e²/r²</dt><dd id="oFe">—</dd>
+              <dt>F_g = G m₁m₂/r²</dt><dd id="oFg">—</dd>
+              <dt>Fₑ/F_g</dt><dd class="big" id="oRatio">—</dd>
+            </dl>
+            <p class="hint" id="ratioHint">A razão aparece depois que você registrar uma previsão e tocar em Calcular.</p>
+            <div class="row"><button type="button" id="recPair" disabled>Registrar razão</button></div>
+          </section>
+          <section aria-labelledby="h-neu">
+            <h2 id="h-neu">Neutralidade</h2>
+            <p class="hint">Dois corpos iguais de massa M, feitos de matéria tipo hidrogênio, com desequilíbrio fracionário de carga f. Como as duas forças caem com 1/r², a razão não depende da distância entre os centros.</p>
+            <label class="check" for="massSel" style="flex-wrap:wrap">Massa de cada corpo</label>
+            <select id="massSel" style="width:100%;max-width:100%"></select>
+            <div class="slider">
+              <div class="top"><label for="fLog">Desequilíbrio f</label><output id="fOut" for="fLog">—</output></div>
+              <input type="range" id="fLog" min="-24" max="-12" step="0.01" value="-21">
+            </div>
+            <dl class="readout">
+              <dt>Q = f (M/mₚ) e</dt><dd id="oQ">—</dd>
+              <dt>Fₑ/F_g</dt><dd class="big" id="oNeu">—</dd>
+            </dl>
+            <div class="canvas-box" style="touch-action:auto"><canvas id="cvNeu" aria-label="Gráfico log-log da razão entre as forças em função de f, com o ponto atual"></canvas></div>
+            <div class="row"><button type="button" id="recNeu">Registrar razão</button><button type="button" id="showFstar">Conferir f*</button></div>
+            <p class="hint" id="fstarOut" hidden></p>
+          </section>
+        </div>
+      </div>
+
+      <div class="card" id="cardShape">
+        <section aria-labelledby="h-shape">
+          <h3 id="h-shape">Transição para corpos esféricos</h3>
+          <p class="formula">P꜀ = (2π/3) G ρ² R² = σ  ⇒  R* = √(3σ / (2π G ρ²))</p>
+          <dl class="readout">
+            <dt>R* com ρ e σ atuais<small id="rsParams">—</small></dt><dd class="big" id="oRs2">—</dd>
+          </dl>
+          <div class="table-box" style="max-height:none">
+            <table>
+              <thead><tr><th class="l">Corpo</th><th>Raio médio</th><th>ρ (g/cm³)</th><th class="l">Forma observada</th><th title="R* calculado com ρ e σ dos ajustes atuais, o mesmo para todas as linhas">R/R* (ρ e σ atuais)</th></tr></thead>
+              <tbody id="bodyRows"></tbody>
+            </table>
+          </div>
+          <p class="hint">O critério compara uma pressão com uma resistência e só vale em ordem de grandeza. A coluna R/R* usa o mesmo R* para todas as linhas, calculado com ρ e σ dos ajustes; para comparar um corpo, ajuste ρ à densidade dele. Corpos com R/R* perto de 1 ficam no limiar, e ali pesam o que o modelo deixa de fora, como a composição real, a porosidade, a temperatura, o escoamento lento do gelo ao longo de bilhões de anos e a história de impactos. As densidades de Proteus e Hipérion têm incerteza grande.</p>
+          <details>
+            <summary>Fontes dos dados</summary>
+            <ul class="sources">
+              <li>Raios médios e densidades de Fobos, Lua, Mimas, Hipérion e Proteus: JPL Solar System Dynamics, <a href="https://ssd.jpl.nasa.gov/sats/phys_par/" target="_blank" rel="noopener">Planetary Satellite Physical Parameters</a> (raios segundo Archinal et al. 2018).</li>
+              <li>Raios de Terra, Netuno e Ceres: JPL SSD, <a href="https://ssd.jpl.nasa.gov/planets/phys_par.html" target="_blank" rel="noopener">Planetary Physical Parameters</a>. Ceres, densidade e dimensões 964 × 964 × 892 km, e Vesta, diâmetro efetivo 522,77 km, densidade e dimensões 569 × 554 × 453 km: <a href="https://ssd.jpl.nasa.gov/tools/sbdb_lookup.html" target="_blank" rel="noopener">JPL Small-Body Database</a> (Park et al. 2016, Nature 537; Park et al. 2025, Nat. Astron.).</li>
+              <li>Formas: NASA Science, páginas de <a href="https://science.nasa.gov/mars/moons/phobos/" target="_blank" rel="noopener">Fobos</a> (27 × 22 × 18 km), <a href="https://science.nasa.gov/saturn/moons/hyperion/" target="_blank" rel="noopener">Hipérion</a> (“potato-shaped”, 410 × 260 × 220 km), <a href="https://science.nasa.gov/neptune/moons/proteus/" target="_blank" rel="noopener">Proteus</a> (forma de caixa, perto da massa que o tornaria esférico), <a href="https://science.nasa.gov/saturn/moons/mimas/" target="_blank" rel="noopener">Mimas</a> (“somewhat ovoid”) e <a href="https://science.nasa.gov/solar-system/asteroids/4-vesta/" target="_blank" rel="noopener">Vesta</a> (“almost spherical”); equilíbrio hidrostático de Ceres: <a href="https://www.jpl.nasa.gov/news/whats-inside-ceres-new-findings-from-gravity-data" target="_blank" rel="noopener">JPL, 2016</a>; Lua, raios equatorial e polar: <a href="https://nssdc.gsfc.nasa.gov/planetary/factsheet/moonfact.html" target="_blank" rel="noopener">NSSDC Moon Fact Sheet</a>.</li>
+              <li>Estações: raio do Sol, <a href="https://nssdc.gsfc.nasa.gov/planetary/factsheet/sunfact.html" target="_blank" rel="noopener">NSSDC Sun Fact Sheet</a>; semieixo maior de Netuno, <a href="https://nssdc.gsfc.nasa.gov/planetary/factsheet/neptunefact.html" target="_blank" rel="noopener">NSSDC Neptune Fact Sheet</a>; Via Láctea com cerca de 100 mil anos-luz, <a href="https://imagine.gsfc.nasa.gov/science/featured_science/milkyway" target="_blank" rel="noopener">NASA Imagine the Universe</a>; raio comóvel do universo observável, cerca de 46 bilhões de anos-luz, valor usual do modelo cosmológico padrão (D. Baumann, Cosmology, Cambridge, 2022). Constantes e raio de carga do próton: CODATA 2018; massa do bóson W: média do PDG. Ser humano, célula e DNA: valores típicos de ordem de grandeza.</li>
+            </ul>
+          </details>
+        </section>
+      </div>
+    </div>
+
+    <aside class="notebook" aria-label="Caderno de medidas">
+      <section aria-labelledby="h-read">
+        <h2 id="h-read">Medida</h2>
+        <p class="station-name" id="stName">—</p>
+        <dl class="readout">
+          <dt>Grandeza<small id="stKind">—</small></dt><dd id="stVal">—</dd>
+          <dt>Em unidade usual</dt><dd id="stUsual">—</dd>
+          <dt>log₁₀(L / 1 m)</dt><dd id="stLog">—</dd>
+          <dt>Ordem de grandeza</dt><dd class="big" id="stOrder">—</dd>
+          <dt>Faixa de interação</dt><dd id="stBand" style="font-family:var(--body);font-size:14px">—</dd>
+        </dl>
+        <p class="hint" id="stNote"></p>
+        <div class="row"><button type="button" id="recStation">Registrar estação</button></div>
+      </section>
+
+      <section aria-labelledby="h-sit">
+        <h2 id="h-sit">Situações</h2>
+        <div class="sit-tabs" id="sitTabs"></div>
+        <p class="sit-title" id="sitTitle"></p>
+        <p class="sit-text" id="sitText"></p>
+        <div class="row"><button type="button" id="goInstr">Ir ao instrumento</button></div>
+      </section>
+
+      <section aria-labelledby="h-ctrl">
+        <h2 id="h-ctrl">Ajustes</h2>
+        <div class="seg" role="group" aria-label="Predefinições de material">
+          <button type="button" id="preRock" aria-pressed="false">Rocha</button>
+          <button type="button" id="preIce" aria-pressed="false">Gelo</button>
+        </div>
+        <div class="slider">
+          <div class="top"><label for="rho">Densidade ρ</label><output id="rhoOut" for="rho">—</output></div>
+          <input type="range" id="rho" min="500" max="8000" step="10" value="3000">
+        </div>
+        <div class="slider">
+          <div class="top"><label for="sigLog">Resistência à compressão σ</label><output id="sigOut" for="sigLog">—</output></div>
+          <input type="range" id="sigLog" min="6" max="9" step="0.01" value="8">
+        </div>
+        <p class="hint">Hipóteses de ordem de grandeza: rocha com ρ = 3000 kg/m³ e σ = 10⁸ Pa; gelo de água com ρ = 1000 kg/m³ e σ = 10⁷ Pa.</p>
+        <dl class="readout">
+          <dt>R*<small>fronteira gravitação | eletromagnetismo</small></dt><dd class="big" id="oRs">—</dd>
+          <dt>Massa da esfera de raio R*</dt><dd id="oMs">—</dd>
+        </dl>
+        <div class="row"><button type="button" id="recRs">Registrar R*</button></div>
+      </section>
+
+      <section aria-labelledby="h-reg">
+        <h2 id="h-reg">Registro</h2>
+        <div class="row">
+          <button type="button" id="copyCsv">Copiar tabela</button>
+          <button type="button" id="clearRec">Limpar</button>
+        </div>
+        <div class="table-box">
+          <table>
+            <thead><tr><th>#</th><th class="l">Sit.</th><th class="l">Grandeza</th><th>Valor</th><th class="l">Observação</th></tr></thead>
+            <tbody id="recBody"></tbody>
+          </table>
+        </div>
+        <p class="hint" id="copyMsg" hidden></p>
+        <textarea id="csvBox" hidden readonly aria-label="Tabela em formato CSV"></textarea>
+      </section>
+    </aside>
+  </div>
+
+  <div class="verify" id="verify" aria-label="Teste de verificação"></div>
+  <footer>Licença CC BY-NC-SA 4.0 [confirmar]. Penn Lee Menezes Rodrigues, UEPA. Protótipo v0.1, outubro de 2026.</footer>
+</div>
+
+<script>
+/* Núcleo físico do Laboratório 0 (Escalas e interações).
+   Constantes CODATA 2018 em unidades SI. Três blocos:
+   1) razão entre força elétrica e gravitacional para um par de partículas (independe de r);
+   2) neutralidade: dois corpos de massa M feitos de matéria tipo hidrogênio com desequilíbrio
+      fracionário de carga f, carga em excesso Q = f (M/m_p) e;
+   3) transição para corpos esféricos: pressão central de uma esfera uniforme
+      P_c = (2π/3) G ρ² R², e o raio R* em que P_c iguala a resistência à compressão σ.
+   Mais o mapeamento entre comprimento (m) e posição na escala logarítmica da tela. */
+const Phys = (() => {
+  const C = {
+    e: 1.602176634e-19,      // C (exato)
+    k: 8.9875517923e9,       // N m² C⁻²
+    G: 6.67430e-11,          // N m² kg⁻²
+    me: 9.1093837015e-31,    // kg
+    mp: 1.67262192369e-27,   // kg
+    hbarc_MeVfm: 197.3269804, // MeV fm
+    mW_MeV: 80369,           // MeV (massa do bóson W, média PDG 2024; só para o alcance da interação fraca)
+    a0: 5.29177210903e-11,   // m, raio de Bohr (CODATA 2018)
+    ly: 9.4607304725808e15,  // m, ano-luz (exato)
+    rp: 0.8414e-15,          // m, raio de carga do próton (CODATA 2018)
+    r0_nuc: 1.2e-15          // m, R = r0 A^(1/3) para núcleos
+  };
+  const MASS = { e: C.me, p: C.mp };
+  const PAIRS = { ee: ["e", "e"], pp: ["p", "p"], ep: ["e", "p"] };
+
+  // forças entre duas partículas de carga e (em módulo) separadas por r
+  function pairForces(pair, r) {
+    const [a, b] = PAIRS[pair];
+    const Fe = C.k * C.e * C.e / (r * r);
+    const Fg = C.G * MASS[a] * MASS[b] / (r * r);
+    return { Fe, Fg, ratio: Fe / Fg };
+  }
+  // razão sem r: k e² / (G m1 m2)
+  function pairRatio(pair) {
+    const [a, b] = PAIRS[pair];
+    return C.k * C.e * C.e / (C.G * MASS[a] * MASS[b]);
+  }
+
+  // neutralidade: dois corpos idênticos de massa M, desequilíbrio f, centros a distância r
+  function neutrality(f, M, r) {
+    const Q = f * (M / C.mp) * C.e;
+    const Fe = C.k * Q * Q / (r * r);
+    const Fg = C.G * M * M / (r * r);
+    return { Q, Fe, Fg, ratio: Fe / Fg };
+  }
+  // f* em que Fe = Fg (Fe/Fg = f² k e² / (G m_p²) = 1)
+  const fStar = () => Math.sqrt(C.G * C.mp * C.mp / (C.k * C.e * C.e));
+
+  // transição para corpos esféricos
+  const centralPressure = (rho, R) => (2 * Math.PI / 3) * C.G * rho * rho * R * R;
+  const Rstar = (rho, sigma) => Math.sqrt(3 * sigma / (2 * Math.PI * C.G * rho * rho));
+  const massOf = (rho, R) => (4 / 3) * Math.PI * rho * R * R * R;
+
+  // escalas de referência calculadas
+  const weakRange = () => (C.hbarc_MeVfm / C.mW_MeV) * 1e-15;        // ħ/(m_W c), em m
+  const nuclearRadius = A => C.r0_nuc * Math.cbrt(A);                  // m
+  const probeLength = E_MeV => (C.hbarc_MeVfm / E_MeV) * 1e-15;        // ħc/E, em m
+
+  // escala logarítmica: grandes à esquerda; view = { c: log10 do centro, ppd: px por década }
+  const toScreen = (L, view, width) => width / 2 + (view.c - Math.log10(L)) * view.ppd;
+  const fromScreen = (x, view, width) => Math.pow(10, view.c - (x - width / 2) / view.ppd);
+
+  return { C, PAIRS, pairForces, pairRatio, neutrality, fStar, centralPressure, Rstar, massOf, weakRange, nuclearRadius, probeLength, toScreen, fromScreen };
+})();
+if (typeof module !== "undefined") module.exports = Phys;
+</script>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const C = Phys.C;
+  const SUP = { "-": "⁻", "0": "⁰", "1": "¹", "2": "²", "3": "³", "4": "⁴", "5": "⁵", "6": "⁶", "7": "⁷", "8": "⁸", "9": "⁹" };
+  const sup = n => String(n).split("").map(c => SUP[c]).join("");
+  const num = (v, d) => v.toLocaleString("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d });
+  function sci(v, d = 3) {
+    if (!isFinite(v)) return "—";
+    if (v === 0) return "0";
+    let ex = Math.floor(Math.log10(Math.abs(v))), m = v / Math.pow(10, ex);
+    m = Math.round(m * Math.pow(10, d)) / Math.pow(10, d);
+    if (Math.abs(m) >= 10) { m /= 10; ex += 1; }
+    return num(m, d) + " × 10" + sup(ex);
+  }
+  const sig = (v, s = 3) => { const d = Math.max(0, s - 1 - Math.floor(Math.log10(Math.abs(v)))); return num(v, Math.min(d, 6)); };
+  function usual(L) {
+    if (L >= 1e15) return (L / C.ly >= 1e4 ? sci(L / C.ly, 2) : sig(L / C.ly)) + " anos-luz";
+    const u = [[1e3, "km"], [1, "m"], [1e-3, "mm"], [1e-6, "μm"], [1e-9, "nm"], [1e-12, "pm"], [1e-15, "fm"], [1e-18, "am"]];
+    for (const [f, n] of u) if (L >= f) return sig(L / f) + " " + n;
+    return sig(L / 1e-18) + " am";
+  }
+
+  // ---------- estações ----------
+  const ST = [
+    { id: "univ", name: "Universo observável", L: 4.4e26, kind: "raio comóvel" },
+    { id: "gal", name: "Via Láctea", L: 1e5 * C.ly, kind: "diâmetro do disco, 100 mil anos-luz" },
+    { id: "solsys", name: "Sistema Solar", L: 4.514953e12, kind: "semieixo maior da órbita de Netuno" },
+    { id: "sun", name: "Sol", L: 6.957e8, kind: "raio" },
+    { id: "earth", name: "Terra", L: 6.3710084e6, kind: "raio médio" },
+    { id: "ceres", name: "Ceres", L: 4.697e5, kind: "raio médio (planeta anão)" },
+    { id: "proteus", name: "Proteus", L: 2.08e5, kind: "raio médio (lua de Netuno)" },
+    { id: "human", name: "Ser humano", L: 1.7, kind: "altura típica" },
+    { id: "cell", name: "Célula", L: 1e-5, kind: "diâmetro típico de célula eucariótica" },
+    { id: "dna", name: "DNA", L: 2e-9, kind: "largura da dupla hélice" },
+    { id: "atom", name: "Átomo de hidrogênio", L: 2 * C.a0, kind: "diâmetro, 2a₀" },
+    { id: "proton", name: "Próton", L: C.rp, kind: "raio de carga" },
+    { id: "coll", name: "Colisões", L: Phys.probeLength(2e5), kind: "ħc/E para E = 200 GeV" }
+  ];
+  const PRI = ["univ", "human", "atom", "earth", "gal", "cell", "proton", "sun", "solsys", "dna", "coll", "ceres", "proteus"].map(id => ST.findIndex(s => s.id === id));
+  const LOG_MAX = 27, LOG_MIN = -19, NUC = Phys.nuclearRadius(238), WEAK = Phys.weakRange();
+  const BAND = { grav: "Gravitação", em: "Eletromagnetismo", strong: "Força forte" };
+
+  const state = { rho: 3000, sigLog: 8, preset: "rocha", sel: 7, pair: "ee", rLog: -10, revealed: false, fLog: -21, mass: 3, fstarShown: false, sit: 0, records: [] };
+  const Rs = () => Phys.Rstar(state.rho, Math.pow(10, state.sigLog));
+  const bandOf = L => L >= Rs() ? "grav" : L >= NUC ? "em" : "strong";
+
+  // ---------- escala: vista e desenho ----------
+  const cv = $("cv"), ctx = cv.getContext("2d");
+  const HGT = 372, AXIS = 262, BAND_Y = 292, BAND_H = 26, WEAK_Y = 324, WEAK_H = 16, PILL_Y = 356;
+  const LANES = [168, 88, 8];
+  let Wc = 800, dpr = 1, colors = {};
+  const view = { c: 4, ppd: 17 };
+  const ppdMin = () => (Wc - 40) / (LOG_MAX - LOG_MIN);
+  const clampView = () => { view.ppd = Math.max(ppdMin(), Math.min(320, view.ppd)); view.c = Math.max(LOG_MIN, Math.min(LOG_MAX, view.c)); };
+  const X = L => Phys.toScreen(L, view, Wc);
+  const XL = lg => Wc / 2 + (view.c - lg) * view.ppd;
+
+  function readColors() {
+    const cs = getComputedStyle(document.documentElement);
+    for (const k of ["sheet", "paper", "ink", "muted", "grid", "grid-major", "rule", "accent", "grav", "em", "strong", "weak", "sun", "pos", "neg"]) colors[k] = cs.getPropertyValue("--" + k).trim();
+  }
+  function resize() {
+    Wc = cv.parentElement.clientWidth;
+    dpr = window.devicePixelRatio || 1;
+    cv.width = Math.round(Wc * dpr); cv.height = Math.round(HGT * dpr); cv.style.height = HGT + "px";
+    clampView(); draw(); resizeNeu();
+  }
+
+  // pequenos desenhos originais de cada estação, centrados em (x, y), raio s
+  function hash(i) { const t = Math.sin(i * 127.1 + 311.7) * 43758.5453; return t - Math.floor(t); }
+  function icon(id, x, y, s) {
+    const k = colors;
+    ctx.save(); ctx.lineWidth = 1.4; ctx.lineCap = "round"; ctx.lineJoin = "round";
+    const circle = (cx, cy, r) => { ctx.beginPath(); ctx.arc(cx, cy, r, 0, 2 * Math.PI); };
+    if (id === "univ") {
+      circle(x, y, s); ctx.fillStyle = k.ink; ctx.globalAlpha = 0.08; ctx.fill(); ctx.globalAlpha = 1; ctx.strokeStyle = k.muted; ctx.stroke();
+      const pts = []; for (let i = 0; i < 26; i++) { const a = 2 * Math.PI * hash(i), r = s * 0.9 * Math.sqrt(hash(i + 50)); pts.push([x + r * Math.cos(a), y + r * Math.sin(a)]); }
+      ctx.strokeStyle = k.muted; ctx.globalAlpha = 0.6; ctx.lineWidth = 0.8;
+      for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) if (Math.hypot(pts[i][0] - pts[j][0], pts[i][1] - pts[j][1]) < s * 0.32) { ctx.beginPath(); ctx.moveTo(...pts[i]); ctx.lineTo(...pts[j]); ctx.stroke(); }
+      ctx.globalAlpha = 1; ctx.fillStyle = k.ink; pts.forEach(p => { circle(p[0], p[1], 1.2); ctx.fill(); });
+    } else if (id === "gal") {
+      ctx.strokeStyle = k.grav; ctx.lineWidth = 1.6;
+      for (let arm = 0; arm < 2; arm++) { ctx.beginPath(); for (let t = 0; t <= 3.4 * Math.PI; t += 0.1) { const r = s * 0.14 * Math.exp(0.2 * t), a = t + arm * Math.PI; const px = x + r * Math.cos(a), py = y + 0.55 * r * Math.sin(a); t ? ctx.lineTo(px, py) : ctx.moveTo(px, py); } ctx.stroke(); }
+      ctx.fillStyle = k.ink; ctx.beginPath(); ctx.ellipse(x, y, s * 0.2, s * 0.12, 0, 0, 2 * Math.PI); ctx.fill();
+    } else if (id === "solsys") {
+      ctx.strokeStyle = k.muted; ctx.lineWidth = 0.9;
+      [0.3, 0.52, 0.76, 1].forEach((f, i) => { ctx.beginPath(); ctx.ellipse(x, y, s * f, s * f * 0.42, 0, 0, 2 * Math.PI); ctx.stroke(); const a = 1 + i * 1.7; ctx.fillStyle = k.ink; circle(x + s * f * Math.cos(a), y + s * f * 0.42 * Math.sin(a), 2); ctx.fill(); });
+      ctx.fillStyle = k.sun; circle(x, y, 3.5); ctx.fill();
+    } else if (id === "sun") {
+      ctx.strokeStyle = k.sun; ctx.lineWidth = 1.8;
+      for (let i = 0; i < 12; i++) { const a = i * Math.PI / 6; ctx.beginPath(); ctx.moveTo(x + s * 0.72 * Math.cos(a), y + s * 0.72 * Math.sin(a)); ctx.lineTo(x + s * Math.cos(a), y + s * Math.sin(a)); ctx.stroke(); }
+      ctx.fillStyle = k.sun; circle(x, y, s * 0.58); ctx.fill();
+    } else if (id === "earth") {
+      circle(x, y, s * 0.85); ctx.fillStyle = k.neg; ctx.globalAlpha = 0.3; ctx.fill(); ctx.globalAlpha = 1; ctx.strokeStyle = k.neg; ctx.stroke();
+      ctx.save(); circle(x, y, s * 0.85); ctx.clip(); ctx.fillStyle = k.em; ctx.globalAlpha = 0.85;
+      ctx.beginPath(); ctx.ellipse(x - s * 0.3, y - s * 0.2, s * 0.32, s * 0.45, 0.5, 0, 2 * Math.PI); ctx.fill();
+      ctx.beginPath(); ctx.ellipse(x + s * 0.35, y + s * 0.25, s * 0.25, s * 0.35, -0.4, 0, 2 * Math.PI); ctx.fill(); ctx.restore();
+    } else if (id === "ceres" || id === "proteus") {
+      ctx.beginPath();
+      if (id === "ceres") ctx.arc(x, y, s * 0.8, 0, 2 * Math.PI);
+      else { const R = [1, 0.8, 0.95, 0.74, 0.98, 0.83, 0.9, 0.72]; const N = R.length, pt = i => { const a = 2 * Math.PI * i / N + 0.3; return [x + s * 0.9 * R[i % N] * Math.cos(a), y + s * 0.78 * R[i % N] * Math.sin(a)]; };
+        for (let i = 0; i < N; i++) { const p = pt(i), q = pt(i + 1), m = [(p[0] + q[0]) / 2, (p[1] + q[1]) / 2]; i ? ctx.quadraticCurveTo(p[0], p[1], m[0], m[1]) : (ctx.moveTo(m[0], m[1])); } const p0 = pt(0), q0 = pt(1); ctx.quadraticCurveTo(p0[0], p0[1], (p0[0] + q0[0]) / 2, (p0[1] + q0[1]) / 2); ctx.closePath(); }
+      ctx.fillStyle = k.muted; ctx.globalAlpha = 0.35; ctx.fill(); ctx.globalAlpha = 1; ctx.strokeStyle = k.ink; ctx.stroke();
+      ctx.strokeStyle = k.ink; ctx.globalAlpha = 0.55; ctx.lineWidth = 1;
+      [[-0.3, -0.2, 0.18], [0.25, 0.15, 0.13], [0.05, 0.4, 0.09], [0.35, -0.3, 0.08]].forEach(([a, b, r]) => { circle(x + a * s, y + b * s, r * s); ctx.stroke(); });
+    } else if (id === "human") {
+      ctx.strokeStyle = k.ink; ctx.lineWidth = 2;
+      circle(x, y - s * 0.68, s * 0.2); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x, y - s * 0.46); ctx.lineTo(x, y + s * 0.3);
+      ctx.moveTo(x - s * 0.42, y - s * 0.12); ctx.lineTo(x, y - s * 0.3); ctx.lineTo(x + s * 0.42, y - s * 0.12);
+      ctx.moveTo(x - s * 0.3, y + s * 0.95); ctx.lineTo(x, y + s * 0.3); ctx.lineTo(x + s * 0.3, y + s * 0.95); ctx.stroke();
+    } else if (id === "cell") {
+      ctx.beginPath(); ctx.ellipse(x, y, s * 0.95, s * 0.7, -0.2, 0, 2 * Math.PI); ctx.fillStyle = k.em; ctx.globalAlpha = 0.12; ctx.fill(); ctx.globalAlpha = 1; ctx.strokeStyle = k.em; ctx.stroke();
+      ctx.fillStyle = k.em; ctx.globalAlpha = 0.55; circle(x + s * 0.12, y - s * 0.05, s * 0.28); ctx.fill(); ctx.globalAlpha = 1;
+      ctx.fillStyle = k.ink; [[-0.5, 0.2], [-0.35, -0.3], [0.55, 0.25], [0.5, -0.3], [-0.1, 0.45]].forEach(([a, b]) => { circle(x + a * s, y + b * s, 1.6); ctx.fill(); });
+    } else if (id === "dna") {
+      const w = s * 0.75, h = s;
+      for (let i = 0; i <= 8; i++) { const t = -h + 2 * h * i / 8, ph = (t / h) * 1.5 * Math.PI; ctx.strokeStyle = k.muted; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x + w * Math.sin(ph), y + t); ctx.lineTo(x - w * Math.sin(ph), y + t); ctx.stroke(); }
+      for (const sg of [1, -1]) { ctx.strokeStyle = sg > 0 ? k.em : k.ink; ctx.lineWidth = 1.8; ctx.beginPath(); for (let i = 0; i <= 40; i++) { const t = -h + 2 * h * i / 40, ph = (t / h) * 1.5 * Math.PI; const px = x + sg * w * Math.sin(ph); i ? ctx.lineTo(px, y + t) : ctx.moveTo(px, y + t); } ctx.stroke(); }
+    } else if (id === "atom") {
+      for (let i = 0; i < 70; i++) { const r = -Math.log(1 - 0.92 * hash(i + 9)) * s * 0.32, a = 2 * Math.PI * hash(i + 200); ctx.fillStyle = k.em; ctx.globalAlpha = 0.65; circle(x + r * Math.cos(a), y + r * Math.sin(a), 1.1); ctx.fill(); }
+      ctx.globalAlpha = 1; ctx.fillStyle = k.ink; circle(x, y, 2); ctx.fill();
+    } else if (id === "proton") {
+      circle(x, y, s * 0.85); ctx.strokeStyle = k.strong; ctx.stroke();
+      const q = [0, 1, 2].map(i => [x + s * 0.42 * Math.cos(-Math.PI / 2 + i * 2 * Math.PI / 3), y + s * 0.42 * Math.sin(-Math.PI / 2 + i * 2 * Math.PI / 3)]);
+      ctx.strokeStyle = k.muted; ctx.lineWidth = 1;
+      for (let i = 0; i < 3; i++) { const a = q[i], b = q[(i + 1) % 3], L = Math.hypot(b[0] - a[0], b[1] - a[1]), ux = (b[0] - a[0]) / L, uy = (b[1] - a[1]) / L; ctx.beginPath(); for (let j = 0; j <= 30; j++) { const t = j / 30, w = 2.2 * Math.sin(t * 6 * Math.PI); const px = a[0] + ux * L * t - uy * w, py = a[1] + uy * L * t + ux * w; j ? ctx.lineTo(px, py) : ctx.moveTo(px, py); } ctx.stroke(); }
+      ctx.fillStyle = k.strong; q.forEach(p => { circle(p[0], p[1], 3.2); ctx.fill(); });
+    } else if (id === "coll") {
+      ctx.strokeStyle = k.ink; ctx.fillStyle = k.ink; ctx.lineWidth = 1.6;
+      for (const sg of [-1, 1]) { ctx.beginPath(); ctx.moveTo(x + sg * s, y); ctx.lineTo(x + sg * s * 0.25, y); ctx.stroke(); ctx.beginPath(); ctx.moveTo(x + sg * s * 0.2, y); ctx.lineTo(x + sg * s * 0.36, y - 4); ctx.lineTo(x + sg * s * 0.36, y + 4); ctx.closePath(); ctx.fill(); }
+      ctx.strokeStyle = k.weak; ctx.lineWidth = 1.2;
+      for (let i = 0; i < 7; i++) { const a = -Math.PI / 2 + (i - 3) * 0.42 + (i % 2 ? Math.PI : 0), c = (hash(i) - 0.5) * 0.8; ctx.beginPath(); ctx.moveTo(x, y); ctx.quadraticCurveTo(x + s * 0.5 * Math.cos(a + c), y + s * 0.5 * Math.sin(a + c), x + s * 0.95 * Math.cos(a), y + s * 0.95 * Math.sin(a)); ctx.stroke(); }
+    }
+    ctx.restore();
+  }
+
+  let layout = { blocks: [], dots: [] };
+  function draw() {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = colors.sheet; ctx.fillRect(0, 0, Wc, HGT);
+    // papel quadriculado: horizontais a cada 24 px, verticais nas décadas
+    ctx.lineWidth = 1;
+    for (let y = 0; y <= HGT; y += 24) { ctx.strokeStyle = colors.grid; ctx.beginPath(); ctx.moveTo(0, y + 0.5); ctx.lineTo(Wc, y + 0.5); ctx.stroke(); }
+    const step = view.ppd >= 40 ? 1 : view.ppd >= 20 ? 2 : view.ppd >= 9 ? 5 : 10;
+    const lgR = view.c + Wc / 2 / view.ppd, lgL = view.c - Wc / 2 / view.ppd;
+    for (let n = Math.ceil(lgL); n <= Math.floor(lgR); n++) {
+      if (n < LOG_MIN || n > LOG_MAX) continue;
+      const x = Math.round(XL(n)) + 0.5;
+      ctx.strokeStyle = n % step === 0 ? colors["grid-major"] : colors.grid; ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, AXIS); ctx.stroke();
+    }
+    // faixas de interação
+    const lgRs = Math.log10(Rs()), lgN = Math.log10(NUC);
+    const band = (a, b, col, long, short, y, h, dashed, alpha = 0.24) => {
+      const x0 = Math.max(XL(b), -2), x1 = Math.min(XL(a), Wc + 2); if (x1 <= x0) return;
+      ctx.save();
+      if (dashed) { ctx.setLineDash([4, 3]); ctx.strokeStyle = col; ctx.lineWidth = 1.5; ctx.strokeRect(x0 + 0.5, y + 0.5, x1 - x0 - 1, h - 1); }
+      else { ctx.globalAlpha = alpha; ctx.fillStyle = col; ctx.fillRect(x0, y, x1 - x0, h); ctx.globalAlpha = 1; ctx.fillStyle = col; ctx.fillRect(x0, y, x1 - x0, 2); }
+      ctx.restore();
+      ctx.font = "500 12px IBM Plex Sans, system-ui, sans-serif"; ctx.textBaseline = "middle"; ctx.textAlign = "center"; ctx.fillStyle = colors.ink;
+      for (const t of [long, short]) { const tw = ctx.measureText(t).width; if (x1 - x0 > tw + 12) { ctx.fillText(t, (x0 + x1) / 2, y + h / 2 + 1); break; } }
+    };
+    band(lgRs, LOG_MAX, colors.grav, "Gravitação", "G", BAND_Y, BAND_H);
+    band(lgN, lgRs, colors.em, "Eletromagnetismo", "EM", BAND_Y, BAND_H);
+    band(-17, lgN, colors.strong, "Força forte", "F", BAND_Y, BAND_H);
+    band(LOG_MIN, -17, colors.strong, "forte: quarks e glúons", "", BAND_Y, BAND_H, false, 0.1);
+    const lw = Math.log10(WEAK);
+    band(lw - 0.8, lw + 0.8, colors.weak, "fraca: decaimentos", "fraca", WEAK_Y, WEAK_H, true);
+    // eixo
+    ctx.strokeStyle = colors.ink; ctx.lineWidth = 1.5; ctx.beginPath(); ctx.moveTo(Math.max(0, XL(LOG_MAX)), AXIS + 0.5); ctx.lineTo(Math.min(Wc, XL(LOG_MIN)), AXIS + 0.5); ctx.stroke();
+    ctx.font = "11px IBM Plex Mono, monospace"; ctx.textAlign = "center"; ctx.textBaseline = "top";
+    for (let n = Math.ceil(lgL); n <= Math.floor(lgR); n++) {
+      if (n < LOG_MIN || n > LOG_MAX) continue;
+      const x = XL(n), major = n % step === 0;
+      ctx.strokeStyle = colors.ink; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(x, AXIS); ctx.lineTo(x, AXIS + (major ? 7 : 4)); ctx.stroke();
+      if (major) { ctx.fillStyle = colors.muted; ctx.fillText("10" + sup(n), x, AXIS + 10); }
+      if (view.ppd >= 60 && n > LOG_MIN) for (let m = 2; m <= 9; m++) { const xm = XL(n - 1 + Math.log10(m)); ctx.beginPath(); ctx.moveTo(xm, AXIS); ctx.lineTo(xm, AXIS + 3); ctx.stroke(); }
+    }
+    ctx.textAlign = "left"; ctx.fillStyle = colors.muted; ctx.textBaseline = "middle"; ctx.fillText("comprimento (m)", 6, WEAK_Y + WEAK_H / 2);
+    // linha e etiqueta de R*
+    const xr = XL(lgRs);
+    ctx.font = "500 12px IBM Plex Mono, monospace"; ctx.textBaseline = "middle";
+    if (xr >= 0 && xr <= Wc) {
+      ctx.save(); ctx.setLineDash([5, 4]); ctx.strokeStyle = colors.ink; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(xr, 0); ctx.lineTo(xr, PILL_Y - 9); ctx.stroke(); ctx.restore();
+      pill("R* = " + sci(Rs(), 2) + " m", xr, PILL_Y);
+    } else pill(xr < 0 ? "◀ R* = " + sci(Rs(), 2) + " m" : "R* = " + sci(Rs(), 2) + " m ▶", xr < 0 ? 0 : Wc, PILL_Y, xr < 0 ? "left" : "right");
+    // estações
+    layout = { blocks: [], dots: [] };
+    const order = [state.sel, ...PRI.filter(i => i !== state.sel)];
+    const placed = LANES.map(() => []);
+    const place = [];
+    ctx.font = "600 12px IBM Plex Sans, system-ui, sans-serif"; const nameW = s => ctx.measureText(s.name).width;
+    for (const i of order) {
+      const s = ST[i], x = X(s.L);
+      if (x < -40 || x > Wc + 40) continue;
+      layout.dots.push({ i, x });
+      ctx.font = "600 12px IBM Plex Sans, system-ui, sans-serif"; const w1 = nameW(s);
+      ctx.font = "11px IBM Plex Mono, monospace"; const w2 = ctx.measureText(sci(s.L, 2) + " m").width;
+      const w = Math.max(46, w1, w2) + 10;
+      let bx = Math.max(2, Math.min(Wc - w - 2, x - w / 2));
+      for (let ln = 0; ln < LANES.length; ln++) {
+        if (placed[ln].every(r => bx + w + 6 < r[0] || bx > r[1] + 6)) { placed[ln].push([bx, bx + w]); place.push({ i, x, bx, w, ln }); break; }
+      }
+    }
+    // pontos e linhas de chamada
+    for (const p of place) { const top = LANES[p.ln]; ctx.strokeStyle = colors.muted; ctx.globalAlpha = 0.6; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(p.x, top + 76); ctx.lineTo(p.x, AXIS); ctx.stroke(); ctx.globalAlpha = 1; }
+    for (const d of layout.dots) { const sel = d.i === state.sel; ctx.fillStyle = sel ? colors.accent : colors.ink; ctx.beginPath(); ctx.arc(d.x, AXIS, sel ? 5 : 3.2, 0, 2 * Math.PI); ctx.fill(); }
+    for (const p of place) {
+      const s = ST[p.i], top = LANES[p.ln], sel = p.i === state.sel, cx = p.bx + p.w / 2;
+      ctx.fillStyle = colors.sheet; ctx.globalAlpha = 0.92; ctx.fillRect(p.bx, top, p.w, 76); ctx.globalAlpha = 1;
+      if (sel) { ctx.strokeStyle = colors.accent; ctx.lineWidth = 2; ctx.strokeRect(p.bx + 1, top + 1, p.w - 2, 74); }
+      icon(s.id, cx, top + 24, 18);
+      ctx.fillStyle = colors.ink; ctx.textAlign = "center"; ctx.textBaseline = "alphabetic";
+      ctx.font = "600 12px IBM Plex Sans, system-ui, sans-serif"; ctx.fillText(s.name, cx, top + 57);
+      ctx.font = "11px IBM Plex Mono, monospace"; ctx.fillStyle = colors.muted; ctx.fillText(sci(s.L, 2) + " m", cx, top + 70);
+      ctx.fillStyle = colors[bandOf(s.L)]; ctx.fillRect(p.bx + 4, top + 73, p.w - 8, 3);
+      layout.blocks.push({ i: p.i, x0: p.bx, y0: top, x1: p.bx + p.w, y1: top + 76 });
+    }
+  }
+  function pill(text, x, y, align = "center") {
+    ctx.font = "500 12px IBM Plex Mono, monospace"; const w = ctx.measureText(text).width + 14;
+    let x0 = align === "left" ? x + 2 : align === "right" ? x - w - 2 : x - w / 2; x0 = Math.max(2, Math.min(Wc - w - 2, x0));
+    ctx.fillStyle = colors.sheet; ctx.strokeStyle = colors.ink; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x0, y - 9, w, 18, 9) : ctx.rect(x0, y - 9, w, 18); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = colors.ink; ctx.textAlign = "center"; ctx.textBaseline = "middle"; ctx.fillText(text, x0 + w / 2, y + 1);
+  }
+
+  // ---------- navegação ----------
+  let anim = null;
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function animateTo(c, ppd) {
+    const tgt = { c, ppd }; const fake = { ...view };
+    view.c = c; view.ppd = ppd; clampView(); tgt.c = view.c; tgt.ppd = view.ppd; view.c = fake.c; view.ppd = fake.ppd;
+    if (reduced) { view.c = tgt.c; view.ppd = tgt.ppd; draw(); return; }
+    const t0 = performance.now(), a = { ...view }; cancelAnimationFrame(anim);
+    const stepF = now => { const u = Math.min(1, (now - t0) / 280), e = u * (2 - u); view.c = a.c + (tgt.c - a.c) * e; view.ppd = Math.exp(Math.log(a.ppd) + (Math.log(tgt.ppd) - Math.log(a.ppd)) * e); draw(); if (u < 1) anim = requestAnimationFrame(stepF); };
+    anim = requestAnimationFrame(stepF);
+  }
+  function zoomAt(factor, px) {
+    const lg = view.c - (px - Wc / 2) / view.ppd; view.ppd *= factor; clampView(); view.c = lg + (px - Wc / 2) / view.ppd; clampView(); draw();
+  }
+  const fitAll = () => animateTo((LOG_MAX + LOG_MIN) / 2, ppdMin());
+  function selectStation(i, center) {
+    state.sel = (i + ST.length) % ST.length; panelStation();
+    if (center) animateTo(Math.log10(ST[state.sel].L), Math.max(view.ppd, 34)); else draw();
+  }
+  $("zoomIn").onclick = () => zoomAt(1.6, Wc / 2);
+  $("zoomOut").onclick = () => zoomAt(1 / 1.6, Wc / 2);
+  $("fitAll").onclick = fitAll;
+  $("prevSt").onclick = () => selectStation(state.sel - 1, true);
+  $("nextSt").onclick = () => selectStation(state.sel + 1, true);
+  $("goRstar").onclick = () => animateTo(Math.log10(Rs()), Math.max(view.ppd, 60));
+
+  const ptrs = new Map(); let gest = null;
+  const localX = e => e.clientX - cv.getBoundingClientRect().left, localY = e => e.clientY - cv.getBoundingClientRect().top;
+  cv.addEventListener("pointerdown", e => {
+    cv.setPointerCapture(e.pointerId); ptrs.set(e.pointerId, { x: localX(e), y: localY(e), type: e.pointerType });
+    cancelAnimationFrame(anim);
+    if (ptrs.size === 1) gest = { mode: "pan", x0: localX(e), y0: localY(e), c0: view.c, moved: false, type: e.pointerType };
+    else if (ptrs.size === 2) { const [a, b] = [...ptrs.values()]; gest = { mode: "pinch", d0: Math.abs(a.x - b.x) + 1e-6, ppd0: view.ppd, lg: view.c - ((a.x + b.x) / 2 - Wc / 2) / view.ppd, moved: true }; }
+    cv.classList.add("grabbing"); e.preventDefault();
+  });
+  cv.addEventListener("pointermove", e => {
+    if (!ptrs.has(e.pointerId) || !gest) return;
+    ptrs.set(e.pointerId, { ...ptrs.get(e.pointerId), x: localX(e), y: localY(e) });
+    if (gest.mode === "pan") {
+      const dx = localX(e) - gest.x0; if (Math.abs(dx) > 4 || Math.abs(localY(e) - gest.y0) > 4) gest.moved = true;
+      view.c = gest.c0 + dx / view.ppd; clampView(); draw();
+    } else if (ptrs.size >= 2) {
+      const [a, b] = [...ptrs.values()]; view.ppd = gest.ppd0 * (Math.abs(a.x - b.x) + 1e-6) / gest.d0; clampView();
+      view.c = gest.lg + ((a.x + b.x) / 2 - Wc / 2) / view.ppd; clampView(); draw();
+    }
+  });
+  function endPtr(e) {
+    if (!ptrs.has(e.pointerId)) return;
+    ptrs.delete(e.pointerId);
+    if (gest && gest.mode === "pan" && !gest.moved && e.type === "pointerup") pick(gest.x0, gest.y0, gest.type === "touch" ? 16 : 6);
+    if (ptrs.size === 1) { const [p] = [...ptrs.values()]; gest = { mode: "pan", x0: p.x, y0: p.y, c0: view.c, moved: true, type: p.type }; }
+    if (!ptrs.size) { gest = null; cv.classList.remove("grabbing"); }
+  }
+  cv.addEventListener("pointerup", endPtr); cv.addEventListener("pointercancel", endPtr);
+  function pick(x, y, pad) {
+    let hit = layout.blocks.find(b => x >= b.x0 - pad && x <= b.x1 + pad && y >= b.y0 - pad && y <= b.y1 + pad);
+    if (!hit) { let bd = 8 + pad; for (const d of layout.dots) { const dd = Math.hypot(d.x - x, AXIS - y); if (dd < bd) { bd = dd; hit = d; } } }
+    if (hit) selectStation(hit.i, false);
+  }
+  cv.addEventListener("wheel", e => { e.preventDefault(); zoomAt(Math.exp(-e.deltaY * (e.deltaMode === 1 ? 0.05 : 0.0015)), localX(e)); }, { passive: false });
+  cv.addEventListener("keydown", e => {
+    const k = e.key; let used = true;
+    if (k === "ArrowLeft") { view.c += 60 / view.ppd; clampView(); draw(); }
+    else if (k === "ArrowRight") { view.c -= 60 / view.ppd; clampView(); draw(); }
+    else if (k === "+" || k === "=") zoomAt(1.4, Wc / 2);
+    else if (k === "-" || k === "_") zoomAt(1 / 1.4, Wc / 2);
+    else if (k === "Home" || k === "0") fitAll();
+    else if (k === "PageDown" || k === "]") selectStation(state.sel + 1, true);
+    else if (k === "PageUp" || k === "[") selectStation(state.sel - 1, true);
+    else used = false;
+    if (used) e.preventDefault();
+  });
+
+  // ---------- painel da estação ----------
+  function panelStation() {
+    const s = ST[state.sel], lg = Math.log10(s.L), b = bandOf(s.L);
+    $("stName").textContent = s.name;
+    $("stKind").textContent = s.kind;
+    $("stVal").textContent = sci(s.L, 3) + " m";
+    $("stUsual").textContent = usual(s.L);
+    $("stLog").textContent = num(lg, 2);
+    $("stOrder").textContent = "10" + sup(Math.round(lg)) + " m";
+    $("stBand").innerHTML = '<span class="swatch" style="background:var(--' + b + ')"></span>' + BAND[b];
+    $("stNote").textContent = s.id === "coll" ? "A interação fraca atua nessa escala em decaimentos, com alcance ħ/(m_W c) ≈ " + sci(WEAK, 1) + " m, mas não mantém nenhuma estrutura ligada." : "A faixa é lida da escala com o R* atual; decidir se ela é a interação que determina a estrutura é tarefa sua.";
+  }
+
+  // ---------- Fe/Fg ----------
+  const PAIR_LABEL = { ee: "elétron-elétron", pp: "próton-próton", ep: "elétron-próton" };
+  function panelRatio() {
+    const r = Math.pow(10, state.rLog), F = Phys.pairForces(state.pair, r);
+    $("rOut").textContent = sci(r, 2) + " m";
+    $("oFe").textContent = state.revealed ? sci(F.Fe, 3) + " N" : "—";
+    $("oFg").textContent = state.revealed ? sci(F.Fg, 3) + " N" : "—";
+    $("oRatio").textContent = state.revealed ? sci(Phys.pairRatio(state.pair), 4) : "—";
+    $("recPair").disabled = !state.revealed; $("ratioHint").hidden = state.revealed;
+    [...$("pairSeg").children].forEach(b => b.setAttribute("aria-pressed", b.dataset.pair === state.pair ? "true" : "false"));
+  }
+  $("pairSeg").onclick = e => { const b = e.target.closest("button"); if (!b) return; state.pair = b.dataset.pair; panelRatio(); };
+  $("rLog").oninput = e => { state.rLog = parseFloat(e.target.value); panelRatio(); };
+  $("calcRatio").onclick = () => {
+    if ($("predExp").value === "" && !state.revealed) { $("ratioHint").textContent = "Escreva primeiro o expoente da sua previsão."; $("predExp").focus(); return; }
+    state.revealed = true; panelRatio();
+  };
+
+  // ---------- neutralidade ----------
+  const MASSES = [
+    { n: "1 kg", M: 1 },
+    { n: "rochedo de 1 km (ρ = 2000 kg/m³)", M: Phys.massOf(2000, 500) },
+    { n: "Lua", M: 4.9028e12 / C.G },
+    { n: "Terra", M: 3.986004418e14 / C.G },
+    { n: "Sol", M: 1.32712440018e20 / C.G }
+  ];
+  MASSES.forEach((m, i) => { const o = document.createElement("option"); o.value = i; o.textContent = m.n + " (" + sci(m.M, 2) + " kg)"; $("massSel").appendChild(o); });
+  const cn = $("cvNeu"), cx2 = cn.getContext("2d"); let Wn = 300; const Hn = 150;
+  function resizeNeu() { Wn = cn.parentElement.clientWidth; cn.width = Math.round(Wn * dpr); cn.height = Math.round(Hn * dpr); cn.style.height = Hn + "px"; drawNeu(); }
+  function drawNeu() {
+    const g = cx2; g.setTransform(dpr, 0, 0, dpr, 0, 0); g.fillStyle = colors.sheet; g.fillRect(0, 0, Wn, Hn);
+    const L = 40, R = Wn - 10, T = 10, B = Hn - 26, xm = [-24, -12], ym = [-14, 14];
+    const px = v => L + (v - xm[0]) / (xm[1] - xm[0]) * (R - L), py = v => B - (v - ym[0]) / (ym[1] - ym[0]) * (B - T);
+    g.lineWidth = 1; g.font = "10px IBM Plex Mono, monospace"; g.fillStyle = colors.muted;
+    for (let v = -24; v <= -12; v += 2) { g.strokeStyle = colors.grid; g.beginPath(); g.moveTo(px(v), T); g.lineTo(px(v), B); g.stroke(); g.textAlign = "center"; g.textBaseline = "top"; g.fillText(String(v).replace("-", "−"), px(v), B + 3); }
+    for (let v = -14; v <= 14; v += 7) { g.strokeStyle = colors.grid; g.beginPath(); g.moveTo(L, py(v)); g.lineTo(R, py(v)); g.stroke(); g.textAlign = "right"; g.textBaseline = "middle"; g.fillText(String(v).replace("-", "−"), L - 4, py(v)); }
+    g.textAlign = "center"; g.textBaseline = "bottom"; g.fillText("log₁₀ f", (L + R) / 2, Hn - 1);
+    g.save(); g.translate(9, (T + B) / 2); g.rotate(-Math.PI / 2); g.textBaseline = "middle"; g.fillText("log₁₀(Fₑ/F_g)", 0, 0); g.restore();
+    g.save(); g.setLineDash([4, 3]); g.strokeStyle = colors.muted; g.beginPath(); g.moveTo(L, py(0)); g.lineTo(R, py(0)); g.stroke(); g.restore();
+    g.save(); g.beginPath(); g.rect(L, T, R - L, B - T); g.clip();
+    const M = MASSES[state.mass].M;
+    g.strokeStyle = colors.accent; g.lineWidth = 2; g.beginPath();
+    for (let i = 0; i <= 60; i++) { const lf = xm[0] + (xm[1] - xm[0]) * i / 60, lr = Math.log10(Phys.neutrality(Math.pow(10, lf), M, 1).ratio); i ? g.lineTo(px(lf), py(lr)) : g.moveTo(px(lf), py(lr)); }
+    g.stroke();
+    if (state.fstarShown) { const lf = Math.log10(Phys.fStar()); g.save(); g.setLineDash([2, 3]); g.strokeStyle = colors.ink; g.beginPath(); g.moveTo(px(lf), T); g.lineTo(px(lf), B); g.stroke(); g.restore(); }
+    const lr = Math.log10(Phys.neutrality(Math.pow(10, state.fLog), M, 1).ratio);
+    g.fillStyle = colors.pos; g.beginPath(); g.arc(px(state.fLog), py(Math.max(ym[0], Math.min(ym[1], lr))), 5, 0, 2 * Math.PI); g.fill();
+    g.restore();
+  }
+  function panelNeu() {
+    const f = Math.pow(10, state.fLog), M = MASSES[state.mass].M, N = Phys.neutrality(f, M, 1);
+    $("fOut").textContent = sci(f, 2);
+    $("oQ").textContent = sci(N.Q, 3) + " C";
+    $("oNeu").textContent = sci(N.ratio, 3);
+    $("fstarOut").hidden = !state.fstarShown;
+    $("fstarOut").textContent = "f* = √(G mₚ² / (k e²)) = " + sci(Phys.fStar(), 3) + ", linha pontilhada no gráfico.";
+    drawNeu();
+  }
+  $("massSel").onchange = e => { state.mass = +e.target.value; panelNeu(); };
+  $("fLog").oninput = e => { state.fLog = parseFloat(e.target.value); panelNeu(); };
+  $("showFstar").onclick = () => { state.fstarShown = !state.fstarShown; $("showFstar").textContent = state.fstarShown ? "Ocultar f*" : "Conferir f*"; panelNeu(); };
+
+  // ---------- transição ----------
+  const BODIES = [
+    { n: "Fobos", R: 11.08, rho: 1.872, shape: "irregular, 27 × 22 × 18 km" },
+    { n: "Hipérion", R: 135.0, rho: 0.539, shape: "irregular, 410 × 260 × 220 km" },
+    { n: "Mimas", R: 198.2, rho: 1.150, shape: "quase redondo, levemente ovoide" },
+    { n: "Proteus", R: 208, rho: 1.03, shape: "irregular, forma de caixa", unc: true },
+    { n: "Vesta", R: 261.4, rho: 3.460, shape: "quase esférico, 569 × 554 × 453 km" },
+    { n: "Ceres", R: 469.7, rho: 2.162, shape: "redondo, em equilíbrio hidrostático" },
+    { n: "Lua", R: 1737.4, rho: 3.344, shape: "redonda" }
+  ];
+  function panelShape() {
+    const R = Rs(), sg = Math.pow(10, state.sigLog);
+    $("rhoOut").textContent = num(state.rho, 0) + " kg/m³";
+    $("sigOut").textContent = sci(sg, 2) + " Pa";
+    $("oRs").textContent = sci(R, 2) + " m"; $("oRs2").textContent = sci(R, 2) + " m";
+    $("rsParams").textContent = "ρ = " + num(state.rho, 0) + " kg/m³, σ = " + sci(sg, 2) + " Pa";
+    $("oMs").textContent = sci(Phys.massOf(state.rho, R), 2) + " kg";
+    $("preRock").setAttribute("aria-pressed", state.preset === "rocha" ? "true" : "false");
+    $("preIce").setAttribute("aria-pressed", state.preset === "gelo" ? "true" : "false");
+    $("bodyRows").innerHTML = "";
+    for (const b of BODIES) {
+      const tr = document.createElement("tr");
+      [[b.n, "l"], [num(b.R, b.R < 100 ? 2 : 1) + " km", ""], [num(b.rho, 2) + (b.unc ? "*" : ""), ""], [b.shape, "l wrap"], [num(b.R * 1e3 / R, 2), ""]].forEach(([v, c]) => { const td = document.createElement("td"); td.textContent = v; if (c) td.className = c; tr.appendChild(td); });
+      $("bodyRows").appendChild(tr);
+    }
+    const note = document.createElement("tr"); note.innerHTML = '<td colspan="5" class="l wrap" style="color:var(--muted);font-size:12px">* densidade de Proteus derivada de massa muito incerta (±0,97 g/cm³).</td>'; $("bodyRows").appendChild(note);
+    panelStation(); draw();
+  }
+  function setPreset(p) {
+    state.preset = p;
+    if (p === "rocha") { state.rho = 3000; state.sigLog = 8; } else if (p === "gelo") { state.rho = 1000; state.sigLog = 7; }
+    $("rho").value = state.rho; $("sigLog").value = state.sigLog; panelShape();
+  }
+  $("preRock").onclick = () => setPreset("rocha");
+  $("preIce").onclick = () => setPreset("gelo");
+  $("rho").oninput = e => { state.rho = parseFloat(e.target.value); state.preset = ""; panelShape(); };
+  $("sigLog").oninput = e => { state.sigLog = parseFloat(e.target.value); state.preset = ""; panelShape(); };
+
+  // ---------- situações ----------
+  const situations = [
+    { title: "S1. A escala", target: "cv",
+      setup: () => { fitAll(); selectStation(7, false); },
+      text: "Percorra a escala arrastando, girando a roda do mouse, fazendo pinça ou usando os botões. Escolha cinco estações bem separadas e registre cada uma. Na coluna de observação, escreva qual interação determina a estrutura daquele objeto e justifique por que é essa, e não outra, que fixa sua forma e seu tamanho." },
+    { title: "S2. Quão fraca é a gravidade", target: "cardRatio",
+      setup: () => { state.pair = "ee"; state.revealed = false; $("predExp").value = ""; $("ratioHint").textContent = "A razão aparece depois que você registrar uma previsão e tocar em Calcular."; panelRatio(); },
+      text: "Antes de calcular, escreva sua previsão para a ordem de grandeza de Fₑ/F_g entre dois elétrons e só então toque em Calcular. Registre a razão para os três pares e varie a distância. Explique por que a razão não depende de r e por que um dos pares dá um valor muito menor que os outros." },
+    { title: "S3. Por que a gravidade manda no céu", target: "cardRatio",
+      setup: () => { state.mass = 3; $("massSel").value = 3; state.fLog = -21; $("fLog").value = -21; state.fstarShown = false; $("showFstar").textContent = "Conferir f*"; panelNeu(); },
+      text: "Mova o desequilíbrio f até que as duas forças se igualem e registre esse valor. Troque a massa dos corpos e verifique se ele muda. Use o resultado para explicar por que planetas e estrelas são governados pela gravidade, e só depois confira f* no botão." },
+    { title: "S4. Onde termina o domínio eletromagnético", target: "cardShape",
+      setup: () => { setPreset("rocha"); animateTo(5.4, Math.max(70, ppdMin())); },
+      text: "Registre R* para as predefinições de rocha e de gelo e observe a fronteira mover-se na escala. Compare com a tabela de corpos reais, ajustando ρ à densidade de cada um quando for útil. Indique quais corpos o critério descreve bem e quais ficam no limiar, e explique o que o modelo deixa de fora nesses casos." }
+  ];
+  function loadSituation(i) {
+    state.sit = i; situations[i].setup();
+    [...$("sitTabs").children].forEach((b, k) => b.setAttribute("aria-pressed", k === i ? "true" : "false"));
+    $("sitTitle").textContent = situations[i].title; $("sitText").textContent = situations[i].text;
+  }
+  situations.forEach((s, i) => { const b = document.createElement("button"); b.type = "button"; b.textContent = "S" + (i + 1); b.title = s.title; b.onclick = () => loadSituation(i); $("sitTabs").appendChild(b); });
+  $("goInstr").onclick = () => { const t = $(situations[state.sit].target); t.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" }); if (t.id === "cv") t.focus({ preventScroll: true }); };
+
+  // ---------- registro ----------
+  const EMPTY = '<tr><td colspan="5" class="l" style="font-family:var(--body);color:var(--muted);white-space:normal">Nenhum registro. Use os botões Registrar da estação e de cada calculadora.</td></tr>';
+  function renderRecords() {
+    const tb = $("recBody");
+    if (!state.records.length) { tb.innerHTML = EMPTY; return; }
+    tb.innerHTML = "";
+    state.records.forEach(r => {
+      const tr = document.createElement("tr");
+      [[r.k, ""], ["S" + r.sit, "l"], [r.q, "l"], [r.v, ""]].forEach(([v, c]) => { const td = document.createElement("td"); td.textContent = v; if (c) td.className = c; tr.appendChild(td); });
+      const td = document.createElement("td"), inp = document.createElement("input");
+      inp.type = "text"; inp.value = r.obs; inp.setAttribute("aria-label", "Observação do registro " + r.k); inp.oninput = () => { r.obs = inp.value; };
+      td.appendChild(inp); tr.appendChild(td); tb.appendChild(tr);
+    });
+    tb.closest(".table-box").scrollTop = 1e6;
+  }
+  function record(q, v, obs) { state.records.push({ k: state.records.length + 1, sit: state.sit + 1, q, v, obs }); renderRecords(); }
+  $("recStation").onclick = () => { const s = ST[state.sel]; record("L " + s.name, sci(s.L, 3) + " m", s.kind + "; faixa: " + BAND[bandOf(s.L)] + "; justificativa: "); };
+  $("recPair").onclick = () => { const p = $("predExp").value; record("Fₑ/F_g " + PAIR_LABEL[state.pair], sci(Phys.pairRatio(state.pair), 4), (p !== "" ? "previsão 10^" + p + "; " : "") + "r = " + sci(Math.pow(10, state.rLog), 2) + " m"); };
+  $("recNeu").onclick = () => record("Fₑ/F_g corpos", sci(Phys.neutrality(Math.pow(10, state.fLog), MASSES[state.mass].M, 1).ratio, 3), "f = " + sci(Math.pow(10, state.fLog), 3) + "; M = " + sci(MASSES[state.mass].M, 2) + " kg");
+  $("recRs").onclick = () => record("R*", sci(Rs(), 3) + " m", (state.preset ? state.preset + "; " : "") + "ρ = " + num(state.rho, 0) + " kg/m³; σ = " + sci(Math.pow(10, state.sigLog), 2) + " Pa");
+  $("clearRec").onclick = () => { state.records = []; renderRecords(); $("csvBox").hidden = true; $("copyMsg").hidden = true; };
+  const csvCell = s => /[;"\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  const csv = () => ["registro;situacao;grandeza;valor;observacao", ...state.records.map(r => [r.k, "S" + r.sit, r.q, r.v, r.obs].map(x => csvCell(String(x))).join(";"))].join("\n");
+  $("copyCsv").onclick = () => {
+    const text = csv(), box = $("csvBox"), msg = $("copyMsg");
+    const fallback = () => { box.value = text; box.hidden = false; box.focus(); box.select(); msg.hidden = false; msg.textContent = "Selecione o texto abaixo e copie (Ctrl+C ou toque longo)."; };
+    try { navigator.clipboard.writeText(text).then(() => { msg.hidden = false; msg.textContent = "Tabela copiada. Cole numa planilha; as colunas são separadas por ponto e vírgula."; box.hidden = true; }, fallback); }
+    catch (err) { fallback(); }
+  };
+
+  // ---------- teste de verificação ao carregar ----------
+  (function selfTest() {
+    const e = 1.602176634e-19, k = 8.9875517923e9, G = 6.67430e-11, me = 9.1093837015e-31;
+    const a = Phys.pairRatio("ee"), a0 = k * e * e / (G * me * me);
+    const r = Phys.Rstar(3000, 1e8), r0 = Math.sqrt(3 * 1e8 / (2 * Math.PI * G * 3000 * 3000));
+    const pc = Phys.centralPressure(3000, r);
+    const ok = Math.abs(a / a0 - 1) < 1e-12 && Math.abs(r / r0 - 1) < 1e-12 && Math.abs(pc / 1e8 - 1) < 1e-12;
+    $("verify").innerHTML = "<span>Teste de verificação ao abrir: <b>" + (ok ? "aprovado" : "reprovado") + "</b></span>" +
+      "<span>Fₑ/F_g elétron-elétron = " + sci(a, 4) + " (k e²/(G mₑ²) = " + sci(a0, 4) + ")</span>" +
+      "<span>R* rocha (ρ = 3000 kg/m³, σ = 10⁸ Pa) = " + sci(r, 4) + " m (√(3σ/(2πGρ²)) = " + sci(r0, 4) + " m; P꜀(R*) = " + sci(pc, 4) + " Pa)</span>";
+  })();
+
+  // tema
+  const mq = window.matchMedia("(prefers-color-scheme: dark)");
+  const retheme = () => { readColors(); draw(); drawNeu(); };
+  mq.addEventListener ? mq.addEventListener("change", retheme) : mq.addListener(retheme);
+  new MutationObserver(retheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  readColors();
+  Wc = cv.parentElement.clientWidth; view.ppd = ppdMin(); view.c = (LOG_MAX + LOG_MIN) / 2;
+  renderRecords(); panelRatio(); panelNeu(); setPreset("rocha");
+  loadSituation(0);
+  window.addEventListener("resize", resize);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { draw(); drawNeu(); });
+  resize();
+})();
+</script>
+
+</body>
+</html>

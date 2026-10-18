@@ -1,0 +1,671 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Laboratório de Coulomb</title>
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,'Segoe UI',sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,600&display=swap">
+<style>
+/* Layout: bancada — prancheta quadriculada à esquerda, caderno de medidas à direita; empilha no celular. */
+:root {
+  --paper: #f3f5f6;
+  --sheet: #fbfcfc;
+  --ink: #17232b;
+  --muted: #5a6a74;
+  --grid: #d9e2e7;
+  --grid-major: #c3d0d7;
+  --rule: #d3dce1;
+  --pos: #c2410c;
+  --neg: #1d5fbf;
+  --field: #6d7f8a;
+  --accent: #0f6e6a;
+  --warn-bg: #fff4e0;
+  --warn-ink: #7a4b00;
+  --region: rgba(15, 110, 106, 0.07);
+  --display: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0f171c; --sheet: #142028; --ink: #e3ebef; --muted: #93a5b0;
+    --grid: #1d2c35; --grid-major: #283a45; --rule: #2a3a44;
+    --pos: #f2814f; --neg: #6aa7ff; --field: #8296a2; --accent: #4fc2b8;
+    --warn-bg: #3a2a0d; --warn-ink: #f5c97a; --region: rgba(79, 194, 184, 0.08);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0f171c; --sheet: #142028; --ink: #e3ebef; --muted: #93a5b0;
+  --grid: #1d2c35; --grid-major: #283a45; --rule: #2a3a44;
+  --pos: #f2814f; --neg: #6aa7ff; --field: #8296a2; --accent: #4fc2b8;
+  --warn-bg: #3a2a0d; --warn-ink: #f5c97a; --region: rgba(79, 194, 184, 0.08);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--paper); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 32px;
+}
+.wrap { max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+header { display: flex; flex-direction: column; gap: 6px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--display); font-weight: 600; font-size: clamp(26px, 4vw, 36px); line-height: 1.15; margin: 0; text-wrap: balance; }
+.model { max-width: 78ch; color: var(--muted); margin: 0; }
+.model b { color: var(--ink); font-weight: 600; }
+.bench { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 18px; align-items: start; }
+@media (max-width: 900px) { .bench { grid-template-columns: minmax(0, 1fr); } }
+.board { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.canvas-box { background: var(--sheet); border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; touch-action: none; }
+canvas { display: block; width: 100%; height: auto; cursor: crosshair; }
+canvas.grab { cursor: grab; } canvas.grabbing { cursor: grabbing; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+@media (max-width: 600px) { .toolbar .sep { display: none; } }
+.toolbar .sep { width: 1px; align-self: stretch; background: var(--rule); margin: 0 4px; }
+button, select { font: inherit; font-size: 14px; color: var(--ink); background: var(--sheet); border: 1px solid var(--rule); border-radius: 5px; padding: 6px 11px; cursor: pointer; }
+button:hover { border-color: var(--muted); }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--sheet); font-weight: 500; }
+button.pos { color: var(--pos); font-weight: 600; } button.neg { color: var(--neg); font-weight: 600; }
+label.check { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--muted); cursor: pointer; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--muted); }
+.legend span::before { content: ""; display: inline-block; width: 16px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle; background: currentColor; }
+.legend .lo { color: var(--pos); } .legend .li { color: var(--neg); }
+.legend .lo, .legend .li { font-weight: 500; }
+.notebook { background: var(--sheet); border: 1px solid var(--rule); border-radius: 6px; display: flex; flex-direction: column; min-width: 0; }
+.notebook section { padding: 14px 16px; border-top: 1px solid var(--rule); display: flex; flex-direction: column; gap: 10px; }
+.notebook section:first-child { border-top: none; }
+h2 { font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.readout { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: baseline; }
+.readout dt { font-size: 14px; } .readout dd { margin: 0; font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 18px; text-align: right; }
+.readout dd.big { font-size: 26px; font-weight: 500; color: var(--accent); }
+.readout dt small { display: block; color: var(--muted); font-size: 12px; }
+.warn { background: var(--warn-bg); color: var(--warn-ink); border-radius: 5px; padding: 8px 10px; font-size: 13px; }
+.sit-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.sit-tabs button { font-family: var(--mono); font-size: 13px; padding: 4px 10px; }
+.sit-tabs button[aria-pressed="true"] { background: var(--ink); color: var(--sheet); border-color: var(--ink); }
+.sit-title { font-weight: 600; margin: 0; }
+.sit-text { margin: 0; font-size: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.slider { display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.slider .top { display: flex; justify-content: space-between; gap: 8px; }
+.slider output { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+.hint { font-size: 12px; color: var(--muted); margin: 0; }
+.table-box { overflow-x: auto; max-height: 260px; overflow-y: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 4px 6px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+th:nth-child(2), td:nth-child(2), th:nth-child(4), td:nth-child(4) { text-align: left; }
+th { font-weight: 500; color: var(--muted); font-size: 12px; position: sticky; top: 0; background: var(--sheet); }
+td { font-family: var(--mono); }
+textarea { width: 100%; min-height: 90px; font-family: var(--mono); font-size: 12px; background: var(--paper); color: var(--ink); border: 1px solid var(--rule); border-radius: 5px; padding: 6px; }
+.verify { font-family: var(--mono); font-size: 12px; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 12px; display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.verify b { color: var(--accent); font-weight: 500; }
+footer { font-size: 12px; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+/* Laboratório 1: acréscimos ao sistema visual do Laboratório 3 */
+[hidden] { display: none !important; }
+.legend .lr { color: var(--accent); font-weight: 600; }
+.legend .lr::before { height: 5px; }
+.legend .lc { color: var(--muted); }
+.legend .lc::before { display: none; }
+th:nth-child(4), td:nth-child(4) { text-align: right; }
+.fit-box { background: var(--paper); border: 1px solid var(--rule); border-radius: 5px; overflow: hidden; }
+#fitCv { cursor: default; }
+.fit-out { font-family: var(--mono); font-size: 14px; font-variant-numeric: tabular-nums; margin: 0; }
+.fit-out b { color: var(--accent); font-weight: 500; }
+.reveal { font-family: var(--mono); font-size: 14px; margin: 0; }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+#cv:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Eletromagnetismo · Tomo I · Módulo 1 · Laboratório 1</div>
+    <h1>Lei de Coulomb e superposição</h1>
+    <p class="model"><b>Modelo.</b> Cargas pontuais no espaço tridimensional, com posições restritas ao plano da tela. Cada fonte q exerce sobre a carga de prova q₀ a força <b>F = k q q₀ r̂ / rⁿ</b>, em que r̂ aponta da fonte para q₀ e n = 2 é a lei de Coulomb; a força total é sempre a soma vetorial das contribuições de todas as fontes. Unidades: k = 1, cargas em múltiplos de q₀, distâncias em u (prancheta de 12 u × 8 u) e forças em k q₀²/u². O controle de expoente permite trocar a lei de Coulomb por outra que não existe na natureza.</p>
+  </header>
+
+  <div class="bench">
+    <div class="board">
+      <div class="toolbar" role="toolbar" aria-label="Ferramentas da bancada">
+        <button class="pos" id="addPos" type="button">+ carga positiva</button>
+        <button class="neg" id="addNeg" type="button">− carga negativa</button>
+        <span class="sep" aria-hidden="true"></span>
+        <label class="check" for="optParts"><input type="checkbox" id="optParts"> contribuições</label>
+        <label class="check" for="optField"><input type="checkbox" id="optField"> direções do campo</label>
+        <label class="check" for="optSnap"><input type="checkbox" id="optSnap" checked> encaixar a 0,1 u</label>
+      </div>
+      <div class="canvas-box"><canvas id="cv" tabindex="0" aria-label="Prancheta com cargas fontes, a carga de prova q₀ e os vetores de força sobre ela. Arraste as cargas; com a prancheta em foco, as setas do teclado movem q₀."></canvas></div>
+      <div class="legend" aria-label="Legenda">
+        <span class="lr">força resultante sobre q₀</span>
+        <span class="lo">contribuição de fonte positiva</span>
+        <span class="li">contribuição de fonte negativa</span>
+      </div>
+      <p class="hint">Comprimentos das setas comprimidos, L = L<sub>máx</sub>(1 − e<sup>−|F|/F₀</sup>): as direções são exatas, mas as setas desenhadas não se somam graficamente. Arraste uma fonte ou o anel q₀; toque numa fonte para selecioná-la e ajustar q. Com a prancheta em foco, as setas do teclado movem q₀ (0,1 u; com Shift, 1 u).</p>
+    </div>
+
+    <aside class="notebook" aria-label="Caderno de medidas">
+      <section aria-labelledby="h-read">
+        <h2 id="h-read">Medida</h2>
+        <dl class="readout">
+          <dt>|F| sobre q₀<small>em k q₀²/u²</small></dt><dd class="big" id="rF">—</dd>
+          <dt>F<sub>x</sub></dt><dd id="rFx">—</dd>
+          <dt>F<sub>y</sub><small>positivo para cima</small></dt><dd id="rFy">—</dd>
+          <dt>r<small>de q₀ à fonte selecionada, em u</small></dt><dd id="rR">—</dd>
+          <dt>Posição de q₀<small>(x; y), em u</small></dt><dd id="rPos">—</dd>
+          <dt>Fonte selecionada<small>(x; y), em u</small></dt><dd id="rSrc">—</dd>
+        </dl>
+        <p class="hint">Componentes e posições seguem a convenção usual, x para a direita e y para cima, com origem no canto inferior esquerdo da prancheta. Na tela, o eixo y cresce para baixo; o painel já faz a conversão.</p>
+        <div class="warn" id="warn" hidden></div>
+      </section>
+
+      <section aria-labelledby="h-sit">
+        <h2 id="h-sit">Situações</h2>
+        <div class="sit-tabs" id="sitTabs"></div>
+        <p class="sit-title" id="sitTitle"></p>
+        <p class="sit-text" id="sitText"></p>
+      </section>
+
+      <section aria-labelledby="h-ctrl">
+        <h2 id="h-ctrl">Ajustes</h2>
+        <div class="slider" id="qBox">
+          <div class="top"><label for="qSrc">q da fonte selecionada</label><output id="qOut" for="qSrc">—</output></div>
+          <input type="range" id="qSrc" min="-3" max="3" step="0.5" value="1">
+          <div class="row"><button type="button" id="delCharge">Remover carga</button></div>
+        </div>
+        <div class="slider" id="nBox">
+          <div class="top"><label for="nExp">Expoente da lei de força, F ∝ 1/rⁿ</label><output id="nOut" for="nExp">2,00</output></div>
+          <input type="range" id="nExp" min="1" max="3" step="0.05" value="2">
+          <p class="hint">n = 2 é a lei de Coulomb.</p>
+        </div>
+        <div class="slider" id="secretBox" hidden>
+          <div class="top"><span>Expoente da lei de força</span><output id="secretOut">oculto</output></div>
+          <div class="row"><button type="button" id="reveal" disabled>Revelar n</button></div>
+          <p class="hint" id="revealHint"></p>
+        </div>
+      </section>
+
+      <section aria-labelledby="h-reg">
+        <h2 id="h-reg">Registro</h2>
+        <label class="check" for="optNoise"><input type="checkbox" id="optNoise"> dinamômetro com incerteza de 2 %</label>
+        <div class="row">
+          <button class="primary" type="button" id="record">Registrar medida</button>
+          <button type="button" id="copyCsv">Copiar tabela</button>
+          <button type="button" id="clearRec">Limpar</button>
+        </div>
+        <div class="table-box">
+          <table>
+            <thead><tr><th>#</th><th>Sit.</th><th>n</th><th>r</th><th>|F|</th><th>F<sub>x</sub></th><th>F<sub>y</sub></th><th>x</th><th>y</th></tr></thead>
+            <tbody id="recBody"></tbody>
+          </table>
+        </div>
+        <div id="fitBlock" hidden>
+          <p class="sit-title">Ajuste em escala log-log</p>
+          <div class="fit-box"><canvas id="fitCv" aria-label="Gráfico de log₁₀ |F| contra log₁₀ r com os pontos registrados e a reta de mínimos quadrados"></canvas></div>
+          <p class="fit-out" id="fitOut"></p>
+          <p class="hint" id="fitNote"></p>
+        </div>
+        <p class="hint" id="copyMsg" hidden></p>
+        <textarea id="csvBox" hidden readonly aria-label="Tabela em formato CSV"></textarea>
+      </section>
+    </aside>
+  </div>
+
+  <div class="verify" id="verify" aria-label="Teste de verificação"></div>
+  <footer>Licença CC BY-NC-SA 4.0 [confirmar]. Penn Lee Menezes Rodrigues, UEPA. Protótipo v0.1, outubro de 2026.</footer>
+</div>
+
+<script>
+/* Núcleo físico do Laboratório 1 (Lei de Coulomb e superposição).
+   Modelo: cargas pontuais no espaço tridimensional, com posições restritas ao plano da tela.
+   Força de uma fonte q sobre a carga de prova q0: F = k q q0 r_hat / r^n, com n = 2 na lei real.
+   Unidades: k = 1, cargas em unidades de q0, distâncias em u; força em k q0^2 / u^2.
+   Coordenadas do mundo: x para a direita, y para baixo (como na tela); a interface converte
+   a componente y para a convenção "y para cima" ao exibir. */
+const Phys = (() => {
+  /* Força total sobre a carga de prova em (x, y), por superposição das contribuições. */
+  function force(x, y, q0, sources, n) {
+    let fx = 0, fy = 0;
+    const parts = [];
+    for (const s of sources) {
+      const dx = x - s.x, dy = y - s.y;
+      const r2 = dx * dx + dy * dy;
+      if (r2 < 1e-14) { parts.push({ fx: 0, fy: 0, r: 0 }); continue; }
+      const r = Math.sqrt(r2);
+      const k = (s.q * q0) * Math.pow(r, -n) / r; // multiplica o vetor (dx, dy), que tem módulo r
+      const px = k * dx, py = k * dy;
+      parts.push({ fx: px, fy: py, r });
+      fx += px; fy += py;
+    }
+    return { fx, fy, mag: Math.hypot(fx, fy), parts };
+  }
+
+  /* Gerador pseudoaleatório com semente (mulberry32): uniforme em [0, 1). */
+  function rng(seed) {
+    let a = seed >>> 0;
+    return function () {
+      a = (a + 0x6d2b79f5) >>> 0;
+      let t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+
+  /* Normal padrão por Box–Muller (usa as duas saídas do par). */
+  function normalSource(u) {
+    let spare = null;
+    return function () {
+      if (spare !== null) { const g = spare; spare = null; return g; }
+      let u1 = u();
+      while (u1 <= 0) u1 = u();
+      const u2 = u();
+      const R = Math.sqrt(-2 * Math.log(u1)), th = 2 * Math.PI * u2;
+      spare = R * Math.sin(th);
+      return R * Math.cos(th);
+    };
+  }
+
+  /* Fator multiplicativo do dinamômetro: 1 + rel * g, g normal padrão. */
+  function noiseFactor(gauss, rel = 0.02) { return 1 + rel * gauss(); }
+
+  /* Ajuste por mínimos quadrados ordinários de log10|F| contra log10 r.
+     Expoente estimado: n_hat = -inclinação; erro padrão da inclinação = s / sqrt(Sxx),
+     com s^2 = soma dos resíduos^2 / (N - 2). Exige N >= 3. */
+  function fitPowerLaw(rs, Fs) {
+    const xs = [], ys = [];
+    for (let i = 0; i < rs.length; i++) {
+      if (rs[i] > 0 && Fs[i] > 0) { xs.push(Math.log10(rs[i])); ys.push(Math.log10(Fs[i])); }
+    }
+    const N = xs.length;
+    if (N < 3) return { ok: false, N, xs, ys };
+    const mx = xs.reduce((a, b) => a + b, 0) / N, my = ys.reduce((a, b) => a + b, 0) / N;
+    let Sxx = 0, Sxy = 0;
+    for (let i = 0; i < N; i++) { Sxx += (xs[i] - mx) ** 2; Sxy += (xs[i] - mx) * (ys[i] - my); }
+    if (Sxx < 1e-12) return { ok: false, N, xs, ys, degenerate: true };
+    const slope = Sxy / Sxx, intercept = my - slope * mx;
+    let ssr = 0;
+    for (let i = 0; i < N; i++) ssr += (ys[i] - intercept - slope * xs[i]) ** 2;
+    const se = Math.sqrt(ssr / (N - 2) / Sxx);
+    return { ok: true, N, xs, ys, slope, intercept, n: -slope, se };
+  }
+
+  /* Expoente secreto: uniforme em [1,5; 2,5], arredondado a 0,05. */
+  function mysteryExponent(u) {
+    const i = Math.min(20, Math.floor(u() * 21)); // 21 valores equiprováveis: 1,50; 1,55; ...; 2,50
+    return Math.round((1.5 + 0.05 * i) * 100) / 100;
+  }
+
+  return { force, rng, normalSource, noiseFactor, fitPowerLaw, mysteryExponent };
+})();
+if (typeof module !== "undefined") module.exports = Phys;
+
+</script>
+<script>
+(() => {
+  const W = 12, H = 8, LMAX = 2.6, F0 = 0.35, MIN_SEP = 0.3, Q0 = 1;
+  const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+  const fcv = document.getElementById("fitCv"), fctx = fcv.getContext("2d");
+  const $ = id => document.getElementById(id);
+  const fmt = (v, d = 4) => (Math.abs(v) < 0.5 * Math.pow(10, -d) ? 0 : v).toLocaleString("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d });
+  const sig = (v, s = 4) => Math.abs(v) < 1e-9 ? "0" : v.toLocaleString("pt-BR", { minimumSignificantDigits: s, maximumSignificantDigits: s, useGrouping: false });
+  const signed = (v, d) => (v > 0 ? "+" : "") + fmt(v, d);
+  const pos = (x, y, d = 2) => "(" + fmt(x, d) + "; " + fmt(H - y, d) + ")";
+
+  // sementes do sorteio (o módulo físico é determinístico dado a semente)
+  const seed0 = (() => { try { const a = new Uint32Array(1); crypto.getRandomValues(a); return a[0]; } catch (e) { return (Date.now() ^ 0x5bd1e995) >>> 0; } })();
+  const uni = Phys.rng(seed0), gauss = Phys.normalSource(Phys.rng(seed0 ^ 0x9e3779b9));
+
+  const situations = [
+    { title: "1. Superposição", parts: false, noise: false,
+      setup: () => ({ sources: [{ x: 4, y: 3, q: 2 }, { x: 8, y: 3, q: -1 }, { x: 6, y: 6, q: 1 }], t: { x: 6, y: 4 }, n: 2 }),
+      text: "Com as contribuições desligadas, leia na prancheta as posições e as cargas e calcule à mão Fx e Fy sobre q₀, componente por componente, somando a contribuição de cada fonte. Depois ligue as contribuições, compare seu resultado com o painel e registre a medida. Mova q₀ para outro ponto e repita." },
+    { title: "2. Medir o expoente", parts: false, noise: true,
+      setup: () => ({ sources: [{ x: 3, y: 4, q: 2 }], t: { x: 5, y: 4 }, n: 2 }),
+      text: "Deixe n = 2 e o dinamômetro ligado. Registre |F| em pelo menos seis distâncias que cubram um fator de 4 ou mais em r. Leia o expoente ajustado e sua incerteza e decida, com base no tamanho dessa incerteza, se os dados são compatíveis com n = 2." },
+    { title: "3. Lei desconhecida", parts: false, noise: true, secret: true,
+      setup: () => ({ sources: [{ x: 3, y: 4, q: 2 }], t: { x: 5, y: 4 } }),
+      text: "O expoente desta lei foi sorteado ao abrir a situação e está oculto. Com o dinamômetro ligado, registre medidas em várias distâncias e determine o expoente com sua incerteza. Anote o resultado antes de tocar em Revelar n, que fica disponível a partir de cinco pontos." },
+    { title: "4. Ponto de equilíbrio", parts: true, noise: false,
+      setup: () => ({ sources: [{ x: 2, y: 4, q: 4 }, { x: 8, y: 4, q: 1 }], t: { x: 6, y: 5 }, n: 2 }),
+      text: "Antes de mexer, determine analiticamente o ponto da reta que une as duas cargas em que a força sobre q₀ se anula. Depois arraste q₀ até encontrá-lo e registre. Desloque q₀ um pouco ao longo da reta e um pouco na direção perpendicular a ela e verifique, em cada caso, se a força tende a trazê-la de volta. Relacione o que observar com o teorema de Earnshaw." }
+  ];
+
+  const state = { sources: [], t: { x: 6, y: 4 }, n: 2, sel: 0, sit: 0, run: 0, secret: null, revealed: new Set(),
+    records: [], parts: false, field: false, snap: true, noise: false };
+  let calc = null;
+
+  // As configurações são escritas na convenção exibida (y para cima); a tela usa y para baixo.
+  function loadSituation(i) {
+    const S = situations[i], s = S.setup();
+    state.sit = i; state.run++;
+    state.sources = s.sources.map(c => ({ ...c, y: H - c.y }));
+    state.t = { x: s.t.x, y: H - s.t.y }; state.sel = 0;
+    if (S.secret) { state.secret = Phys.mysteryExponent(uni); state.n = state.secret; }
+    else { state.secret = null; state.n = s.n; $("nExp").value = s.n; }
+    state.parts = S.parts; $("optParts").checked = S.parts;
+    state.noise = S.noise; $("optNoise").checked = S.noise;
+    [...$("sitTabs").children].forEach((b, k) => b.setAttribute("aria-pressed", k === i ? "true" : "false"));
+    $("sitTitle").textContent = S.title;
+    $("sitText").textContent = S.text;
+    $("nBox").hidden = !!S.secret; $("secretBox").hidden = !S.secret;
+    $("fitBlock").hidden = !(i === 1 || i === 2);
+    $("copyMsg").hidden = true;
+    update(); renderRecords();
+  }
+
+  function recompute() {
+    const f = Phys.force(state.t.x, state.t.y, Q0, state.sources, state.n);
+    const s = state.sources[state.sel];
+    calc = { ...f, r: s ? Math.hypot(state.t.x - s.x, state.t.y - s.y) : null };
+  }
+
+  // ---------- desenho ----------
+  let scale = 60, dpr = 1, colors = {};
+  function readColors() {
+    const cs = getComputedStyle(document.documentElement);
+    for (const k of ["sheet", "paper", "ink", "muted", "grid", "grid-major", "rule", "pos", "neg", "field", "accent"]) colors[k] = cs.getPropertyValue("--" + k).trim();
+  }
+  function resize() {
+    const w = cv.parentElement.clientWidth;
+    dpr = window.devicePixelRatio || 1;
+    scale = w / W;
+    cv.width = Math.round(w * dpr); cv.height = Math.round(H * scale * dpr);
+    cv.style.height = H * scale + "px";
+    fcv.width = 0;
+    draw(); drawFit();
+  }
+  const X = x => x * scale, Y = y => y * scale;
+  const ringR = () => Math.max(9, Math.min(13, scale * 0.16));
+
+  function arrow(c, x, y, ux, uy, L, color, alpha, width = 1.4, head = 6) {
+    const x2 = x + ux * L, y2 = y + uy * L, h = Math.min(head, L * 0.4);
+    c.globalAlpha = alpha; c.strokeStyle = color; c.fillStyle = color; c.lineWidth = width; c.lineCap = "round";
+    c.beginPath(); c.moveTo(x, y); c.lineTo(x2 - ux * h * 0.6, y2 - uy * h * 0.6); c.stroke();
+    c.beginPath(); c.moveTo(x2, y2);
+    c.lineTo(x2 - ux * h - uy * h * 0.55, y2 - uy * h + ux * h * 0.55);
+    c.lineTo(x2 - ux * h + uy * h * 0.55, y2 - uy * h - ux * h * 0.55);
+    c.closePath(); c.fill(); c.globalAlpha = 1;
+  }
+  const compress = m => LMAX * (1 - Math.exp(-m / F0));
+
+  function forceArrow(fx, fy, color, width, head, alpha) {
+    const m = Math.hypot(fx, fy); if (m < 1e-9) return;
+    const ux = fx / m, uy = fy / m, r0 = ringR() + 2;
+    arrow(ctx, X(state.t.x) + ux * r0, Y(state.t.y) + uy * r0, ux, uy, Math.max(6, compress(m) * scale), color, alpha, width, head);
+  }
+
+  function draw() {
+    if (!calc) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = colors.sheet; ctx.fillRect(0, 0, W * scale, H * scale);
+    // papel quadriculado: 0,5 u e 1 u
+    for (let g = 0; g <= W * 2; g++) { ctx.strokeStyle = g % 2 ? colors.grid : colors["grid-major"]; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(Math.round(X(g / 2)) + 0.5, 0); ctx.lineTo(Math.round(X(g / 2)) + 0.5, H * scale); ctx.stroke(); }
+    for (let g = 0; g <= H * 2; g++) { ctx.strokeStyle = g % 2 ? colors.grid : colors["grid-major"]; ctx.beginPath(); ctx.moveTo(0, Math.round(Y(g / 2)) + 0.5); ctx.lineTo(W * scale, Math.round(Y(g / 2)) + 0.5); ctx.stroke(); }
+    // numeração dos eixos (y para cima, origem no canto inferior esquerdo)
+    const step = scale < 45 ? 2 : 1;
+    ctx.fillStyle = colors.muted; ctx.font = "400 " + (scale < 45 ? 9 : 11) + "px IBM Plex Mono, monospace";
+    ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+    for (let gx = step; gx < W; gx += step) ctx.fillText(String(gx), X(gx), H * scale - 2);
+    ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    for (let gy = step; gy < H; gy += step) ctx.fillText(String(gy), 3, Y(H - gy));
+    // direções do campo (força sobre uma carga positiva unitária), opcional
+    if (state.field && state.sources.length) {
+      for (let gx = 0.5; gx < W; gx += 0.5) for (let gy = 0.5; gy < H; gy += 0.5) {
+        if (state.sources.some(c => Math.hypot(c.x - gx, c.y - gy) < 0.35)) continue;
+        const f = Phys.force(gx, gy, 1, state.sources, state.n); if (f.mag < 1e-9) continue;
+        const L = 0.3 * scale, ux = f.fx / f.mag, uy = f.fy / f.mag;
+        arrow(ctx, X(gx) - ux * L / 2, Y(gy) - uy * L / 2, ux, uy, L, colors.field, 0.35, 1.1, 4);
+      }
+    }
+    // linha até a fonte selecionada, com r
+    const s = state.sources[state.sel];
+    if (s) {
+      ctx.strokeStyle = colors.muted; ctx.lineWidth = 1; ctx.setLineDash([4, 4]);
+      ctx.beginPath(); ctx.moveTo(X(s.x), Y(s.y)); ctx.lineTo(X(state.t.x), Y(state.t.y)); ctx.stroke(); ctx.setLineDash([]);
+      const mx = X((s.x + state.t.x) / 2), my = Y((s.y + state.t.y) / 2);
+      ctx.font = "500 " + (scale < 45 ? 10 : 12) + "px IBM Plex Mono, monospace"; ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+      const lbl = "r = " + fmt(calc.r, 2);
+      const tw = ctx.measureText(lbl).width;
+      ctx.fillStyle = colors.sheet; ctx.globalAlpha = 0.85; ctx.fillRect(mx - tw / 2 - 3, my - 18, tw + 6, 15); ctx.globalAlpha = 1;
+      ctx.fillStyle = colors.muted; ctx.fillText(lbl, mx, my - 4);
+    }
+    // fontes
+    state.sources.forEach((c, i) => {
+      const col = c.q > 0 ? colors.pos : c.q < 0 ? colors.neg : colors.muted;
+      const r = Math.max(7, Math.min(18, (0.17 + 0.03 * Math.abs(c.q)) * scale));
+      if (i === state.sel) { ctx.strokeStyle = colors.ink; ctx.lineWidth = 2; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.arc(X(c.x), Y(c.y), r + 5, 0, 2 * Math.PI); ctx.stroke(); ctx.setLineDash([]); }
+      ctx.fillStyle = col; ctx.beginPath(); ctx.arc(X(c.x), Y(c.y), r, 0, 2 * Math.PI); ctx.fill();
+      ctx.fillStyle = colors.sheet; ctx.font = "600 " + Math.round(Math.max(11, Math.min(15, r * 1.2))) + "px IBM Plex Sans, system-ui, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(c.q > 0 ? "+" : c.q < 0 ? "−" : "0", X(c.x), Y(c.y) + 1);
+      ctx.fillStyle = colors.ink; ctx.font = "500 " + (scale < 45 ? 10 : 12) + "px IBM Plex Mono, monospace";
+      ctx.fillText("q=" + signed(c.q, 1), X(c.x), Y(c.y) + r + 12);
+    });
+    // vetores de força sobre q₀
+    if (state.parts) state.sources.forEach((c, i) => { const p = calc.parts[i]; forceArrow(p.fx, p.fy, c.q > 0 ? colors.pos : colors.neg, 2, 8, 0.9); });
+    forceArrow(calc.fx, calc.fy, colors.accent, 4, 13, 1);
+    // carga de prova: anel
+    const tx = X(state.t.x), ty = Y(state.t.y), rr = ringR();
+    ctx.fillStyle = colors.sheet; ctx.strokeStyle = colors.ink; ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(tx, ty, rr, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = colors.ink; ctx.beginPath(); ctx.arc(tx, ty, 2, 0, 2 * Math.PI); ctx.fill();
+    ctx.font = "600 " + (scale < 45 ? 11 : 13) + "px IBM Plex Sans, system-ui, sans-serif"; ctx.textBaseline = "bottom";
+    const right = tx + rr + 22 < W * scale;
+    ctx.textAlign = right ? "left" : "right";
+    ctx.fillText("q₀", tx + (right ? 1 : -1) * rr * 0.8, ty - rr * 0.8 < 14 ? ty + rr + 16 : ty - rr * 0.8);
+    // escala
+    ctx.strokeStyle = colors.ink; ctx.lineWidth = 2; const sx = W * scale - X(1) - 14, sy = H * scale - 18;
+    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + X(1), sy); ctx.moveTo(sx, sy - 4); ctx.lineTo(sx, sy + 4); ctx.moveTo(sx + X(1), sy - 4); ctx.lineTo(sx + X(1), sy + 4); ctx.stroke();
+    ctx.fillStyle = colors.ink; ctx.font = "500 12px IBM Plex Mono, monospace"; ctx.textAlign = "center"; ctx.textBaseline = "bottom"; ctx.fillText("1 u", sx + X(1) / 2, sy - 5);
+  }
+
+  // ---------- painel ----------
+  function panel() {
+    $("rF").textContent = fmt(calc.mag);
+    $("rFx").textContent = fmt(calc.fx);
+    $("rFy").textContent = fmt(-calc.fy);
+    $("rR").textContent = calc.r == null ? "—" : fmt(calc.r, 2);
+    $("rPos").textContent = pos(state.t.x, state.t.y);
+    const s = state.sources[state.sel];
+    $("rSrc").textContent = s ? pos(s.x, s.y) : "—";
+    $("nOut").textContent = fmt(state.n, 2);
+    const msgs = [];
+    if (!state.sources.length) msgs.push("Não há fontes na prancheta; acrescente uma carga.");
+    if (!situations[state.sit].secret && Math.abs(state.n - 2) > 1e-9) msgs.push("Lei de força modificada, F ∝ 1/r^" + fmt(state.n, 2) + ". Esta não é a lei de Coulomb.");
+    $("warn").hidden = !msgs.length; $("warn").textContent = msgs.join(" ");
+    $("qBox").hidden = !s;
+    if (s) { $("qSrc").value = s.q; $("qOut").textContent = signed(s.q, 1) + " q₀"; }
+    // revelar
+    if (situations[state.sit].secret) {
+      const k = fitRows().length, shown = state.revealed.has(state.run);
+      $("reveal").disabled = shown || k < 5;
+      $("secretOut").textContent = shown ? "n = " + fmt(state.secret, 2) : "oculto";
+      $("revealHint").textContent = shown ? "Compare com o seu n̂ ± incerteza: a diferença cabe em quantas incertezas?" : k < 5 ? "Registre ao menos 5 pontos desta lei para poder revelar (faltam " + (5 - k) + ")." : "Anote seu resultado antes de revelar.";
+    }
+  }
+
+  function update() { recompute(); draw(); panel(); }
+
+  // ---------- interação ----------
+  function toWorld(e) { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) / scale, y: (e.clientY - r.top) / scale }; }
+  const snapv = v => state.snap ? Math.round(v * 10) / 10 : v;
+  function place(obj, x, y, others) {
+    x = snapv(Math.max(0.1, Math.min(W - 0.1, x))); y = snapv(Math.max(0.1, Math.min(H - 0.1, y)));
+    for (const o of others) {
+      const dx = x - o.x, dy = y - o.y, d = Math.hypot(dx, dy);
+      if (d < MIN_SEP) { const ux = d > 1e-9 ? dx / d : 1, uy = d > 1e-9 ? dy / d : 0; x = o.x + ux * MIN_SEP; y = o.y + uy * MIN_SEP; }
+    }
+    obj.x = x; obj.y = y;
+  }
+  let drag = null;
+  cv.addEventListener("pointerdown", e => {
+    const p = toWorld(e), hr = e.pointerType === "touch" ? 0.5 : 0.3;
+    let best = null, bd = Infinity;
+    const dt = Math.hypot(state.t.x - p.x, state.t.y - p.y);
+    if (dt < hr) { bd = dt; best = { kind: "test" }; }
+    state.sources.forEach((c, i) => { const d = Math.hypot(c.x - p.x, c.y - p.y); if (d < hr && d < bd) { bd = d; best = { kind: "src", i }; } });
+    if (!best) return;
+    if (best.kind === "src") state.sel = best.i;
+    drag = best; cv.setPointerCapture(e.pointerId); cv.className = "grabbing"; e.preventDefault(); update();
+  });
+  cv.addEventListener("pointermove", e => {
+    const p = toWorld(e);
+    if (!drag) { cv.className = (Math.hypot(state.t.x - p.x, state.t.y - p.y) < 0.3 || state.sources.some(c => Math.hypot(c.x - p.x, c.y - p.y) < 0.3)) ? "grab" : ""; return; }
+    if (drag.kind === "test") place(state.t, p.x, p.y, state.sources);
+    else place(state.sources[drag.i], p.x, p.y, [state.t]);
+    update();
+  });
+  const endDrag = () => { drag = null; cv.className = ""; };
+  cv.addEventListener("pointerup", endDrag); cv.addEventListener("pointercancel", endDrag);
+  cv.addEventListener("keydown", e => {
+    const d = e.shiftKey ? 1 : 0.1, m = { ArrowLeft: [-d, 0], ArrowRight: [d, 0], ArrowUp: [0, -d], ArrowDown: [0, d] }[e.key];
+    if (!m) return;
+    e.preventDefault(); place(state.t, state.t.x + m[0], state.t.y + m[1], state.sources); update();
+  });
+
+  function addCharge(q) {
+    let x, y, tries = 0;
+    do { x = Math.round(10 * (1 + uni() * (W - 2))) / 10; y = Math.round(10 * (1 + uni() * (H - 2))) / 10; tries++; }
+    while (tries < 50 && ([...state.sources, state.t].some(c => Math.hypot(c.x - x, c.y - y) < 1)));
+    state.sources.push({ x, y, q }); state.sel = state.sources.length - 1; update();
+  }
+  $("addPos").onclick = () => addCharge(1);
+  $("addNeg").onclick = () => addCharge(-1);
+  $("delCharge").onclick = () => { if (!state.sources.length) return; state.sources.splice(state.sel, 1); state.sel = Math.max(0, state.sel - 1); update(); };
+  $("qSrc").oninput = e => { const c = state.sources[state.sel]; if (c) { c.q = parseFloat(e.target.value); update(); } };
+  $("nExp").oninput = e => { state.n = parseFloat(e.target.value); update(); };
+  $("optParts").onchange = e => { state.parts = e.target.checked; draw(); };
+  $("optField").onchange = e => { state.field = e.target.checked; draw(); };
+  $("optSnap").onchange = e => { state.snap = e.target.checked; };
+  $("optNoise").onchange = e => { state.noise = e.target.checked; };
+  $("reveal").onclick = () => { if (fitRows().length >= 5) { state.revealed.add(state.run); panel(); renderRecords(); } };
+
+  situations.forEach((s, i) => { const b = document.createElement("button"); b.type = "button"; b.textContent = "S" + (i + 1); b.title = s.title; b.onclick = () => loadSituation(i); $("sitTabs").appendChild(b); });
+
+  // ---------- registro ----------
+  const EMPTY = '<tr><td colspan="9" style="text-align:left;font-family:var(--body);color:var(--muted);white-space:normal">Nenhuma medida registrada. Faça uma previsão, ajuste a bancada e toque em Registrar medida.</td></tr>';
+  const nShown = r => r.secret && !state.revealed.has(r.run) ? "?" : fmt(r.n, 2);
+  function fitRows() {
+    return state.records.filter(r => r.expo && r.nsrc === 1 && r.sit === state.sit + 1 && (!r.secret || r.run === state.run));
+  }
+  function renderRecords() {
+    const tb = $("recBody");
+    if (!state.records.length) tb.innerHTML = EMPTY;
+    else {
+      tb.innerHTML = "";
+      state.records.forEach(r => {
+        const tr = document.createElement("tr");
+        [r.k, "S" + r.sit, nShown(r), r.r == null ? "—" : fmt(r.r, 2), sig(r.F), sig(r.Fx), sig(r.Fy), fmt(r.x, 2), fmt(r.y, 2)].forEach(v => { const td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+        tb.appendChild(tr);
+      });
+      tb.parentElement.parentElement.scrollTop = 1e6;
+    }
+    drawFit(); panel();
+  }
+  $("record").onclick = () => {
+    const S = situations[state.sit], s = state.sources[state.sel];
+    const f = state.noise ? Phys.noiseFactor(gauss, 0.02) : 1; // o dinamômetro escala o vetor medido; as setas mostram o valor exato
+    state.records.push({ k: state.records.length + 1, sit: state.sit + 1, run: state.run, secret: !!S.secret, n: state.n,
+      r: s ? calc.r : null, F: calc.mag * f, Fx: calc.fx * f, Fy: -calc.fy * f, x: state.t.x, y: H - state.t.y,
+      noisy: state.noise, expo: state.sit === 1 || state.sit === 2, nsrc: state.sources.length, qs: s ? s.q : null });
+    renderRecords();
+  };
+  $("clearRec").onclick = () => { state.records = []; renderRecords(); $("csvBox").hidden = true; $("copyMsg").hidden = true; };
+  function csv() {
+    const head = "medida;situacao;n;r;F;Fx;Fy;x_q0;y_q0;dinamometro_2pct";
+    const s6 = v => Math.abs(v) < 1e-12 ? "0" : v.toLocaleString("pt-BR", { maximumSignificantDigits: 6, useGrouping: false });
+    return [head, ...state.records.map(r => [r.k, r.sit, nShown(r), r.r == null ? "" : fmt(r.r, 3), s6(r.F), s6(r.Fx), s6(r.Fy), fmt(r.x, 2), fmt(r.y, 2), r.noisy ? "sim" : "nao"].join(";"))].join("\n");
+  }
+  $("copyCsv").onclick = () => {
+    const text = csv(), box = $("csvBox"), msg = $("copyMsg");
+    const fallback = () => { box.value = text; box.hidden = false; box.focus(); box.select(); msg.hidden = false; msg.textContent = "Selecione o texto abaixo e copie (Ctrl+C ou toque longo)."; };
+    try {
+      navigator.clipboard.writeText(text).then(() => { msg.hidden = false; msg.textContent = "Tabela copiada. Cole numa planilha; as colunas são separadas por ponto e vírgula."; box.hidden = true; }, fallback);
+    } catch (err) { fallback(); }
+  };
+
+  // ---------- ajuste log-log ----------
+  function niceStep(span) { const raw = span / 4, p = Math.pow(10, Math.floor(Math.log10(raw))), m = raw / p; return (m < 1.5 ? 1 : m < 3.5 ? 2 : m < 7.5 ? 5 : 10) * p; }
+  function drawFit() {
+    if ($("fitBlock").hidden) return;
+    const fw = fcv.parentElement.clientWidth, fh = Math.round(Math.min(220, fw * 0.62));
+    if (fw && Math.round(fw * dpr) !== fcv.width) { fcv.width = Math.round(fw * dpr); fcv.height = Math.round(fh * dpr); fcv.style.height = fh + "px"; }
+    const rows = fitRows(), fit = Phys.fitPowerLaw(rows.map(r => r.r), rows.map(r => r.F));
+    const w = fcv.width / dpr, h = fcv.height / dpr, ml = 44, mr = 10, mt = 10, mb = 34;
+    fctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    fctx.fillStyle = colors.paper; fctx.fillRect(0, 0, w, h);
+    let x0 = 0, x1 = 1, y0 = -1, y1 = 0.5;
+    if (fit.xs.length) {
+      x0 = Math.min(...fit.xs); x1 = Math.max(...fit.xs); y0 = Math.min(...fit.ys); y1 = Math.max(...fit.ys);
+      const px = Math.max(0.05, (x1 - x0) * 0.08), py = Math.max(0.05, (y1 - y0) * 0.08);
+      x0 -= px; x1 += px; y0 -= py; y1 += py;
+    }
+    const PX = v => ml + (v - x0) / (x1 - x0) * (w - ml - mr), PY = v => h - mb - (v - y0) / (y1 - y0) * (h - mt - mb);
+    fctx.font = "400 10px IBM Plex Mono, monospace"; fctx.lineWidth = 1;
+    const sx = niceStep(x1 - x0), sy = niceStep(y1 - y0), dx = sx < 0.1 ? 2 : 1, dy = sy < 0.1 ? 2 : 1;
+    fctx.textAlign = "center"; fctx.textBaseline = "top";
+    for (let v = Math.ceil(x0 / sx) * sx; v <= x1 + 1e-9; v += sx) { fctx.strokeStyle = colors.grid; fctx.beginPath(); fctx.moveTo(Math.round(PX(v)) + 0.5, mt); fctx.lineTo(Math.round(PX(v)) + 0.5, h - mb); fctx.stroke(); fctx.fillStyle = colors.muted; fctx.fillText(fmt(v, dx), PX(v), h - mb + 3); }
+    fctx.textAlign = "right"; fctx.textBaseline = "middle";
+    for (let v = Math.ceil(y0 / sy) * sy; v <= y1 + 1e-9; v += sy) { fctx.strokeStyle = colors.grid; fctx.beginPath(); fctx.moveTo(ml, Math.round(PY(v)) + 0.5); fctx.lineTo(w - mr, Math.round(PY(v)) + 0.5); fctx.stroke(); fctx.fillStyle = colors.muted; fctx.fillText(fmt(v, dy), ml - 4, PY(v)); }
+    fctx.strokeStyle = colors.rule; fctx.strokeRect(ml + 0.5, mt + 0.5, w - ml - mr - 1, h - mt - mb - 1);
+    fctx.fillStyle = colors.muted; fctx.textAlign = "center"; fctx.textBaseline = "bottom"; fctx.font = "500 11px IBM Plex Mono, monospace";
+    fctx.fillText("log₁₀ r", ml + (w - ml - mr) / 2, h - 1);
+    fctx.save(); fctx.translate(11, mt + (h - mt - mb) / 2); fctx.rotate(-Math.PI / 2); fctx.textBaseline = "middle"; fctx.fillText("log₁₀ |F|", 0, 0); fctx.restore();
+    if (fit.ok) {
+      fctx.strokeStyle = colors.accent; fctx.lineWidth = 2;
+      fctx.save(); fctx.beginPath(); fctx.rect(ml, mt, w - ml - mr, h - mt - mb); fctx.clip();
+      fctx.beginPath(); fctx.moveTo(PX(x0), PY(fit.intercept + fit.slope * x0)); fctx.lineTo(PX(x1), PY(fit.intercept + fit.slope * x1)); fctx.stroke(); fctx.restore();
+    }
+    fit.xs.forEach((x, i) => { fctx.fillStyle = colors.ink; fctx.beginPath(); fctx.arc(PX(x), PY(fit.ys[i]), 3.5, 0, 2 * Math.PI); fctx.fill(); });
+    // texto
+    const notes = [];
+    if (fit.ok) $("fitOut").innerHTML = "n̂ = <b>" + fmt(fit.n, 3) + " ± " + fmt(fit.se, 3) + "</b> · N = " + fit.N + " pontos";
+    else if (fit.degenerate) $("fitOut").textContent = "Todos os pontos estão na mesma distância; varie r. N = " + fit.N;
+    else $("fitOut").textContent = "Registre ao menos 3 pontos para ver o ajuste (N = " + fit.N + ").";
+    if (fit.ok) notes.push("n̂ é o oposto da inclinação da reta de mínimos quadrados em log₁₀ |F| contra log₁₀ r; a incerteza é o erro padrão dessa inclinação.");
+    if (fit.ok && fit.xs.length) { const span = Math.pow(10, Math.max(...fit.xs) - Math.min(...fit.xs)); notes.push("Faixa coberta: r máx / r mín = " + fmt(span, 1) + "."); }
+    const sigs = new Set(rows.map(r => r.n.toFixed(4) + "|" + r.qs + "|" + r.noisy));
+    if (sigs.size > 1) notes.push("Atenção: os pontos foram registrados com valores diferentes de n, da carga da fonte ou do estado do dinamômetro, e o ajuste mistura essas condições.");
+    const excl = state.records.filter(r => r.expo && r.sit === state.sit + 1 && r.nsrc !== 1 && (!r.secret || r.run === state.run)).length;
+    if (excl) notes.push(excl + " medida(s) feita(s) com mais de uma fonte na prancheta ficaram fora do ajuste.");
+    if (state.sit === 2) notes.push("O ajuste usa apenas os pontos registrados desde que esta lei foi sorteada.");
+    $("fitNote").textContent = notes.join(" ");
+  }
+
+  // ---------- teste de verificação ao carregar ----------
+  (function selfTest() {
+    const a = Phys.force(8, 4, 1, [{ x: 6, y: 4, q: 1 }], 2).mag;
+    const b = Phys.force(6, 4, 1, [{ x: 2, y: 4, q: 4 }, { x: 8, y: 4, q: 1 }], 2).mag;
+    const rs = [1, 1.5, 2, 3, 4, 5], fit = Phys.fitPowerLaw(rs, rs.map(r => Phys.force(3 + r, 4, 1, [{ x: 3, y: 4, q: 2 }], 2).mag));
+    const ok = Math.abs(a - 0.25) < 1e-12 && b < 1e-12 && Math.abs(fit.n - 2) < 1e-12;
+    $("verify").innerHTML = "<span>Teste de verificação ao abrir: <b>" + (ok ? "aprovado" : "reprovado") + "</b></span>" +
+      "<span>q = 1 a r = 2 u: |F| = " + fmt(a, 6) + " (previsto 0,25)</span>" +
+      "<span>+4 e +1 separadas por 6 u, ponto a 4 u da +4: |F| = " + fmt(b, 6) + " (previsto 0)</span>" +
+      "<span>ajuste de dados exatos com n = 2: n̂ = " + fmt(fit.n, 6) + "</span>";
+  })();
+
+  // tema
+  const mq = window.matchMedia("(prefers-color-scheme: dark)");
+  const retheme = () => { readColors(); draw(); drawFit(); };
+  mq.addEventListener ? mq.addEventListener("change", retheme) : mq.addListener(retheme);
+  new MutationObserver(retheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  readColors();
+  loadSituation(0);
+  window.addEventListener("resize", resize);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => { draw(); drawFit(); });
+  resize();
+})();
+</script>
+
+</body>
+</html>

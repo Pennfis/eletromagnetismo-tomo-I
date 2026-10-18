@@ -1,0 +1,942 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Laboratório do Divergente</title>
+<style>:root{color-scheme:light;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font:14px system-ui,-apple-system,'Segoe UI',sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&family=Source+Serif+4:opsz,wght@8..60,600&display=swap">
+<style>
+/* Layout: bancada — prancheta quadriculada à esquerda, caderno de medidas à direita; empilha no celular. */
+:root {
+  --paper: #f3f5f6;
+  --sheet: #fbfcfc;
+  --ink: #17232b;
+  --muted: #5a6a74;
+  --grid: #d9e2e7;
+  --grid-major: #c3d0d7;
+  --rule: #d3dce1;
+  --pos: #c2410c;
+  --neg: #1d5fbf;
+  --field: #6d7f8a;
+  --accent: #0f6e6a;
+  --math: #7a3fb0;
+  --warn-bg: #fff4e0;
+  --warn-ink: #7a4b00;
+  --region: rgba(15, 110, 106, 0.07);
+  --display: "Source Serif 4", Georgia, "Times New Roman", serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --paper: #0f171c; --sheet: #142028; --ink: #e3ebef; --muted: #93a5b0;
+    --grid: #1d2c35; --grid-major: #283a45; --rule: #2a3a44;
+    --pos: #f2814f; --neg: #6aa7ff; --field: #8296a2; --accent: #4fc2b8; --math: #c39af0;
+    --warn-bg: #3a2a0d; --warn-ink: #f5c97a; --region: rgba(79, 194, 184, 0.08);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --paper: #0f171c; --sheet: #142028; --ink: #e3ebef; --muted: #93a5b0;
+  --grid: #1d2c35; --grid-major: #283a45; --rule: #2a3a44;
+  --pos: #f2814f; --neg: #6aa7ff; --field: #8296a2; --accent: #4fc2b8; --math: #c39af0;
+  --warn-bg: #3a2a0d; --warn-ink: #f5c97a; --region: rgba(79, 194, 184, 0.08);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+body {
+  background: var(--paper); color: var(--ink); font-family: var(--body); font-size: 15px; line-height: 1.5;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 20px 32px;
+}
+.wrap { max-width: 1240px; margin: 0 auto; display: flex; flex-direction: column; gap: 18px; }
+header { display: flex; flex-direction: column; gap: 6px; }
+.eyebrow { font-family: var(--mono); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+h1 { font-family: var(--display); font-weight: 600; font-size: clamp(26px, 4vw, 36px); line-height: 1.15; margin: 0; text-wrap: balance; }
+.model { max-width: 78ch; color: var(--muted); margin: 0; }
+.model b { color: var(--ink); font-weight: 600; }
+.bench { display: grid; grid-template-columns: minmax(0, 1fr) 360px; gap: 18px; align-items: start; }
+@media (max-width: 900px) { .bench { grid-template-columns: minmax(0, 1fr); } }
+.board { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.canvas-box { background: var(--sheet); border: 1px solid var(--rule); border-radius: 6px; overflow: hidden; touch-action: none; }
+canvas { display: block; width: 100%; height: auto; cursor: crosshair; }
+canvas:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+canvas.grab { cursor: grab; } canvas.grabbing { cursor: grabbing; }
+.toolbar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+@media (max-width: 600px) { .toolbar .sep { display: none; } }
+.toolbar .sep { width: 1px; align-self: stretch; background: var(--rule); margin: 0 4px; }
+button, select, input[type=number] { font: inherit; font-size: 14px; color: var(--ink); background: var(--sheet); border: 1px solid var(--rule); border-radius: 5px; padding: 6px 11px; cursor: pointer; }
+input[type=number] { cursor: text; width: 9ch; font-family: var(--mono); }
+button:hover { border-color: var(--muted); }
+button:disabled { opacity: 0.5; cursor: not-allowed; }
+button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button.primary { background: var(--accent); border-color: var(--accent); color: var(--sheet); font-weight: 500; }
+button.pos { color: var(--pos); font-weight: 600; } button.neg { color: var(--neg); font-weight: 600; }
+label.check { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; color: var(--muted); cursor: pointer; }
+label.check.off { opacity: 0.55; cursor: not-allowed; }
+.legend { display: flex; flex-wrap: wrap; gap: 14px; font-size: 13px; color: var(--muted); align-items: center; }
+.legend span.ln::before { content: ""; display: inline-block; width: 16px; height: 3px; border-radius: 2px; margin-right: 6px; vertical-align: middle; background: currentColor; }
+.legend .lo { color: var(--pos); } .legend .li { color: var(--neg); }
+.legend .lo, .legend .li { font-weight: 500; }
+.scale { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); flex-wrap: wrap; }
+.scale .bar { width: min(220px, 50vw); height: 12px; border-radius: 3px; border: 1px solid var(--rule); background: linear-gradient(to right, var(--neg), var(--sheet), var(--pos)); }
+.scale .ends { font-family: var(--mono); font-variant-numeric: tabular-nums; color: var(--ink); }
+.scale .ticks { display: flex; justify-content: space-between; width: min(220px, 50vw); font-family: var(--mono); font-size: 11px; color: var(--muted); }
+.scale .col { display: flex; flex-direction: column; gap: 2px; }
+.math-banner { border-left: 4px solid var(--math); background: var(--sheet); border-radius: 0 5px 5px 0; padding: 8px 12px; font-size: 14px; }
+.math-banner b { color: var(--math); font-weight: 600; }
+.notebook { background: var(--sheet); border: 1px solid var(--rule); border-radius: 6px; display: flex; flex-direction: column; min-width: 0; }
+.notebook section { padding: 14px 16px; border-top: 1px solid var(--rule); display: flex; flex-direction: column; gap: 10px; }
+.notebook section:first-child { border-top: none; }
+h2 { font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); margin: 0; }
+.readout { display: grid; grid-template-columns: 1fr auto; gap: 4px 12px; align-items: baseline; margin: 0; }
+.readout dt { font-size: 14px; } .readout dd { margin: 0; font-family: var(--mono); font-variant-numeric: tabular-nums; font-size: 18px; text-align: right; }
+.readout dd.big { font-size: 26px; font-weight: 500; color: var(--accent); }
+.readout dd.txt { font-size: 15px; }
+.readout dt small { display: block; color: var(--muted); font-size: 12px; }
+.readout .sub { border-top: 1px dashed var(--rule); padding-top: 4px; }
+.readout .mth { color: var(--math); }
+.warn { background: var(--warn-bg); color: var(--warn-ink); border-radius: 5px; padding: 8px 10px; font-size: 13px; }
+.sit-tabs { display: flex; flex-wrap: wrap; gap: 6px; }
+.sit-tabs button { font-family: var(--mono); font-size: 13px; padding: 4px 10px; }
+.sit-tabs button[aria-pressed="true"] { background: var(--ink); color: var(--sheet); border-color: var(--ink); }
+.sit-title { font-weight: 600; margin: 0; }
+.sit-text { margin: 0; font-size: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.slider { display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.slider .top { display: flex; justify-content: space-between; gap: 8px; }
+.slider output { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+input[type=range] { width: 100%; accent-color: var(--accent); }
+.hint { font-size: 12px; color: var(--muted); margin: 0; }
+.reveal-list { margin: 0; padding-left: 18px; font-family: var(--mono); font-size: 13px; }
+.table-box { overflow-x: auto; max-height: 260px; overflow-y: auto; }
+table { border-collapse: collapse; width: 100%; font-size: 13px; font-variant-numeric: tabular-nums; }
+th, td { text-align: right; padding: 4px 6px; border-bottom: 1px solid var(--rule); white-space: nowrap; }
+th:nth-child(2), td:nth-child(2), th:nth-child(3), td:nth-child(3), th:nth-child(4), td:nth-child(4) { text-align: left; }
+th { font-weight: 500; color: var(--muted); font-size: 12px; position: sticky; top: 0; background: var(--sheet); }
+td { font-family: var(--mono); }
+textarea { width: 100%; min-height: 90px; font-family: var(--mono); font-size: 12px; background: var(--paper); color: var(--ink); border: 1px solid var(--rule); border-radius: 5px; padding: 6px; }
+.verify { font-family: var(--mono); font-size: 12px; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 12px; display: flex; flex-wrap: wrap; gap: 6px 18px; }
+.verify b { color: var(--accent); font-weight: 500; }
+footer { font-size: 12px; color: var(--muted); }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="eyebrow">Eletromagnetismo · Tomo I · Módulo 4 · Laboratório 4</div>
+    <h1>Divergente: fluxo por unidade de área</h1>
+    <p class="model"><b>Modelo.</b> As fontes são objetos infinitos perpendiculares à tela e o laboratório trabalha no corte plano, com ε₀ = 1: cilindros de raio R e densidade uniforme ρ (em ρ₀), com E = (ρr/2) r̂ dentro e E = (ρR²/2r) r̂ fora, e fios de densidade linear λ, com E = (λ/2πr) r̂, somados por superposição. A sonda calcula numericamente o fluxo <b>Φ = ∮ E·n̂ dl</b> pela sua borda e o divide pela área A; o mapa estima div E por diferenças finitas numa malha. O catálogo traz campos matemáticos prescritos, que não vêm de cargas da bancada.</p>
+  </header>
+
+  <div class="bench">
+    <div class="board">
+      <div class="toolbar" role="toolbar" aria-label="Ferramentas da bancada">
+        <label class="check" for="modeSel">Bancada
+          <select id="modeSel">
+            <option value="scene">Cilindros e fios</option>
+            <option value="cat">Catálogo de campos</option>
+            <option value="hidden">Distribuição oculta</option>
+          </select>
+        </label>
+        <label class="check" for="catSel" id="catBox">Campo
+          <select id="catSel">
+            <option value="x0">E = (x, 0)</option>
+            <option value="xy">E = (x, y)</option>
+            <option value="rot">E = (−y, x)</option>
+            <option value="inv">E = r̂ / r</option>
+            <option value="rhat">E = r̂</option>
+          </select>
+        </label>
+        <span id="addBox" class="row">
+          <button class="pos" id="addCylPos" type="button">+ cilindro</button>
+          <button class="neg" id="addCylNeg" type="button">− cilindro</button>
+          <button type="button" id="addLine">+ fio</button>
+        </span>
+        <span class="sep" aria-hidden="true"></span>
+        <label class="check" for="shapeSel">Sonda
+          <select id="shapeSel">
+            <option value="circle">Círculo</option>
+            <option value="square">Quadrado</option>
+          </select>
+        </label>
+        <span class="sep" aria-hidden="true"></span>
+        <label class="check" for="optArrows"><input type="checkbox" id="optArrows" checked> vetores</label>
+        <label class="check" for="optMap" id="mapLbl"><input type="checkbox" id="optMap"> mapa do divergente</label>
+        <label class="check" for="gSel">malha
+          <select id="gSel">
+            <option value="0.5">0,5 u</option>
+            <option value="0.25">0,25 u</option>
+            <option value="0.125" selected>0,125 u</option>
+          </select>
+        </label>
+      </div>
+      <div class="math-banner" id="mathBanner" hidden><b>Campo matemático prescrito, não produzido por cargas da bancada.</b> As coordenadas x e y são medidas a partir da origem marcada no centro da prancheta, com x para a direita e y para cima.</div>
+      <div class="canvas-box"><canvas id="cv" tabindex="0" aria-label="Plano com o campo elétrico, as fontes e a sonda. Arraste a sonda ou toque num ponto para levá-la até lá; com a prancheta em foco, as setas do teclado movem a sonda."></canvas></div>
+      <div class="legend" aria-label="Legenda">
+        <span class="ln lo">borda da sonda: fluxo líquido saindo</span>
+        <span class="ln li">fluxo líquido entrando</span>
+        <span class="ln" style="color:var(--field)">vetor E (comprimento comprimido)</span>
+      </div>
+      <div class="scale" id="scaleBox" aria-label="Escala de cores">
+        <span id="scaleTitle">ρ/ε₀ das fontes</span>
+        <span class="col"><span class="bar" aria-hidden="true"></span><span class="ticks"><span id="sMin">−1</span><span>0</span><span id="sMax">+1</span></span></span>
+        <span class="hint" id="scaleNote">em ρ₀/ε₀; valores além da escala saturam</span>
+      </div>
+      <p class="hint" id="hint"></p>
+    </div>
+
+    <aside class="notebook" aria-label="Caderno de medidas">
+      <section aria-labelledby="h-read">
+        <h2 id="h-read">Medida</h2>
+        <dl class="readout">
+          <dt>Φ ÷ A<small>fluxo pela borda da sonda dividido pela área</small></dt><dd class="big" id="rRatio">—</dd>
+          <dt id="refLbl">ρ/ε₀ no centro<small>valor local do modelo</small></dt><dd id="rRef">—</dd>
+          <dt class="sub">Φ = ∮ E·n̂ dl<small>soma numérica ao longo da borda</small></dt><dd class="sub" id="rPhi">—</dd>
+          <dt id="qLbl">∫ ρ dA / ε₀ na sonda<small>inclui λ dos fios internos</small></dt><dd id="rQ">—</dd>
+          <dt>Área A</dt><dd id="rA">—</dd>
+          <dt>Centro (x; y)</dt><dd class="txt" id="rPos">—</dd>
+        </dl>
+        <div class="warn" id="warn" hidden></div>
+      </section>
+
+      <section aria-labelledby="h-sit">
+        <h2 id="h-sit">Situações</h2>
+        <div class="sit-tabs" id="sitTabs"></div>
+        <p class="sit-title" id="sitTitle"></p>
+        <p class="sit-text" id="sitText"></p>
+      </section>
+
+      <section aria-labelledby="h-ctrl">
+        <h2 id="h-ctrl">Ajustes</h2>
+        <div class="slider">
+          <div class="top"><label for="hSl">Tamanho h da sonda</label><output id="hOut" for="hSl">0,50 u</output></div>
+          <input type="range" id="hSl" min="0.02" max="1" step="0.01" value="0.5">
+          <label class="check" for="optBig"><input type="checkbox" id="optBig"> ampliar a faixa até 4 u (para envolver fontes inteiras)</label>
+          <p class="hint" id="hHint">h é o diâmetro do círculo ou o lado do quadrado.</p>
+          <div class="row"><button type="button" id="shrink">Encolher</button><span class="hint">registra Φ ÷ A no ponto atual para h = 1; 0,5; 0,25; 0,1 e 0,05 u</span></div>
+        </div>
+        <div class="slider" id="cylBox" hidden>
+          <div class="top"><label for="rhoSl">ρ do cilindro selecionado</label><output id="rhoOut" for="rhoSl">—</output></div>
+          <input type="range" id="rhoSl" min="-3" max="3" step="0.25" value="1">
+          <div class="top"><label for="RSl">Raio R</label><output id="ROut" for="RSl">—</output></div>
+          <input type="range" id="RSl" min="0.3" max="2.5" step="0.05" value="1.5">
+          <div class="row"><button type="button" id="delCyl">Remover cilindro</button></div>
+        </div>
+        <div class="slider" id="lineBox" hidden>
+          <div class="top"><label for="lamSl">λ do fio selecionado</label><output id="lamOut" for="lamSl">—</output></div>
+          <input type="range" id="lamSl" min="-3" max="3" step="0.5" value="1">
+          <div class="row"><button type="button" id="delLine">Remover fio</button></div>
+        </div>
+        <p class="hint" id="selHint" hidden>Toque no centro de um cilindro ou num fio para selecioná-lo e ajustá-lo.</p>
+        <div class="slider" id="hidBox" hidden>
+          <div class="row">
+            <label class="check" for="seedIn">Semente <input type="number" id="seedIn" min="1" max="999999" step="1"></label>
+            <button type="button" id="seedLoad">Carregar</button>
+            <button type="button" id="seedNew">Nova distribuição</button>
+          </div>
+          <p class="hint">A mesma semente gera sempre a mesma distribuição, o que permite que a turma inteira trabalhe com o mesmo problema.</p>
+          <div class="row"><button type="button" class="primary" id="reveal" disabled>Revelar</button><span class="hint" id="revealHint"></span></div>
+          <ol class="reveal-list" id="revealList" hidden></ol>
+        </div>
+      </section>
+
+      <section aria-labelledby="h-reg">
+        <h2 id="h-reg">Registro</h2>
+        <div class="row">
+          <button class="primary" type="button" id="record">Registrar medida</button>
+          <button type="button" id="copyCsv">Copiar tabela</button>
+          <button type="button" id="clearRec">Limpar</button>
+        </div>
+        <div class="table-box">
+          <table>
+            <thead><tr><th>#</th><th>Sit.</th><th>Campo</th><th>Sonda</th><th>Centro</th><th>h</th><th>Φ</th><th>Φ ÷ A</th><th>Ref.</th></tr></thead>
+            <tbody id="recBody"></tbody>
+          </table>
+        </div>
+        <p class="hint">Ref.: ρ/ε₀ no centro da sonda (cilindros e fios) ou div E analítico (catálogo). No catálogo, a referência de cada campo aparece depois do primeiro registro nele, para que a previsão venha antes; na distribuição oculta, depois de Revelar.</p>
+        <p class="hint" id="copyMsg" hidden></p>
+        <textarea id="csvBox" hidden readonly aria-label="Tabela em formato CSV"></textarea>
+      </section>
+    </aside>
+  </div>
+
+  <div class="verify" id="verify" aria-label="Teste de verificação"></div>
+  <footer>Licença CC BY-NC-SA 4.0 [confirmar]. Penn Lee Menezes Rodrigues, UEPA. Protótipo v0.1, outubro de 2026.</footer>
+</div>
+
+<script>
+/* Núcleo físico do Laboratório 4 (Divergente).
+   Corte 2D de fontes infinitas perpendiculares à tela, coordenadas matemáticas (x para a direita,
+   y para cima), origem no centro da prancheta, eps0 = 1.
+   Cilindro uniforme {x, y, R, rho}: E = (rho r / 2) r_hat dentro, (rho R^2 / (2 r)) r_hat fora.
+   Fio {x, y, lam}: E = lam / (2 pi r) r_hat.
+   Catálogo: campos matemáticos prescritos, que não são produzidos por cargas da cena.
+   Fluxo por unidade de comprimento em rho0 u^2 / eps0; fluxo por área em rho0 / eps0. */
+const Phys = (() => {
+  const TWO_PI = 2 * Math.PI;
+  // Gauss-Legendre com 5 pontos, transportado para [0, 1]
+  const GLX = [0, -0.5384693101056831, 0.5384693101056831, -0.906179845938664, 0.906179845938664];
+  const GLW = [0.5688888888888889, 0.4786286704993665, 0.4786286704993665, 0.2369268850561891, 0.2369268850561891];
+  const GL = GLX.map((x, i) => ({ t: 0.5 * (1 + x), w: 0.5 * GLW[i] }));
+
+  const CATALOG = {
+    x0: { label: "E = (x, 0)", f: (X, Y) => [X, 0], div: () => 1, singular: false, divText: "1" },
+    xy: { label: "E = (x, y)", f: (X, Y) => [X, Y], div: () => 2, singular: false, divText: "2" },
+    rot: { label: "E = (−y, x)", f: (X, Y) => [-Y, X], div: () => 0, singular: false, divText: "0" },
+    inv: { label: "E = r̂ / r", f: (X, Y) => { const r2 = X * X + Y * Y; return r2 < 1e-28 ? [0, 0] : [X / r2, Y / r2]; },
+      div: (X, Y) => (Math.hypot(X, Y) < 1e-9 ? NaN : 0), singular: true, divText: "0 fora da origem" },
+    rhat: { label: "E = r̂", f: (X, Y) => { const r = Math.hypot(X, Y); return r < 1e-14 ? [0, 0] : [X / r, Y / r]; },
+      div: (X, Y) => { const r = Math.hypot(X, Y); return r < 1e-9 ? NaN : 1 / r; }, singular: true, divText: "1/r" }
+  };
+
+  function cylField(x, y, c) {
+    const dx = x - c.x, dy = y - c.y, r2 = dx * dx + dy * dy;
+    const k = r2 <= c.R * c.R ? c.rho / 2 : (c.rho * c.R * c.R) / (2 * r2);
+    return [k * dx, k * dy];
+  }
+  function lineField(x, y, l) {
+    const dx = x - l.x, dy = y - l.y, r2 = dx * dx + dy * dy;
+    if (r2 < 1e-28) return [0, 0];
+    const k = l.lam / (TWO_PI * r2);
+    return [k * dx, k * dy];
+  }
+  const origin = scene => scene.origin || { x: 0, y: 0 };
+
+  /* scene = { cyls: [...], lines: [...], cat: null | chave do catálogo, origin } */
+  function field(x, y, scene) {
+    if (scene.cat) { const o = origin(scene); return CATALOG[scene.cat].f(x - o.x, y - o.y); }
+    let ex = 0, ey = 0;
+    for (const c of scene.cyls || []) { const e = cylField(x, y, c); ex += e[0]; ey += e[1]; }
+    for (const l of scene.lines || []) { const e = lineField(x, y, l); ex += e[0]; ey += e[1]; }
+    return [ex, ey];
+  }
+
+  /* Divergente analítico no ponto: { v, status } com status "ok", "borda" (sobre a borda de um
+     cilindro, onde rho é descontínuo) ou "singular" (sobre um fio ou na origem de r̂/r e r̂). */
+  function divAnalytic(x, y, scene, eps = 1e-9) {
+    if (scene.cat) {
+      const o = origin(scene), v = CATALOG[scene.cat].div(x - o.x, y - o.y);
+      return Number.isNaN(v) ? { v: NaN, status: "singular" } : { v, status: "ok" };
+    }
+    for (const l of scene.lines || []) if (Math.hypot(x - l.x, y - l.y) < eps) return { v: NaN, status: "singular" };
+    let v = 0, edge = false;
+    for (const c of scene.cyls || []) {
+      const r = Math.hypot(x - c.x, y - c.y);
+      if (Math.abs(r - c.R) < eps) edge = true;
+      else if (r < c.R) v += c.rho;
+    }
+    return edge ? { v: NaN, status: "borda" } : { v, status: "ok" };
+  }
+
+  function singularPoints(scene) {
+    if (scene.cat) return CATALOG[scene.cat].singular ? [origin(scene)] : [];
+    return (scene.lines || []).map(l => ({ x: l.x, y: l.y }));
+  }
+  function distToSegment(px, py, ax, ay, bx, by) {
+    const dx = bx - ax, dy = by - ay, L2 = dx * dx + dy * dy;
+    let t = L2 > 0 ? ((px - ax) * dx + (py - ay) * dy) / L2 : 0;
+    t = Math.max(0, Math.min(1, t));
+    return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+  }
+  const probeArea = p => (p.shape === "square" ? p.h * p.h : (Math.PI * p.h * p.h) / 4);
+
+  /* Fluxo de E pela borda da sonda (círculo de diâmetro h ou quadrado de lado h), com normal externa.
+     A borda é cortada nos pontos onde cruza a borda de algum cilindro (lá o campo tem uma quina),
+     e cada trecho é subdividido de modo adaptativo perto de fios e de pontos singulares. */
+  function probeFlux(probe, scene) {
+    const sing = singularPoints(scene), cyls = scene.cat ? [] : scene.cyls || [];
+    let phi = 0;
+    if (probe.shape === "square") {
+      const s = probe.h / 2, x0 = probe.x - s, x1 = probe.x + s, y0 = probe.y - s, y1 = probe.y + s;
+      const edges = [[x0, y0, x1, y0, 0, -1], [x1, y0, x1, y1, 1, 0], [x1, y1, x0, y1, 0, 1], [x0, y1, x0, y0, -1, 0]];
+      for (const [ax, ay, bx, by, nx, ny] of edges) {
+        const dx = bx - ax, dy = by - ay, L = Math.hypot(dx, dy);
+        const ts = [0, 1];
+        for (const c of cyls) { // |A + t D - C|^2 = R^2
+          const fx = ax - c.x, fy = ay - c.y, A = dx * dx + dy * dy, B = 2 * (fx * dx + fy * dy), C = fx * fx + fy * fy - c.R * c.R;
+          const disc = B * B - 4 * A * C;
+          if (disc > 0) for (const sg of [-1, 1]) { const t = (-B + sg * Math.sqrt(disc)) / (2 * A); if (t > 1e-12 && t < 1 - 1e-12) ts.push(t); }
+        }
+        ts.sort((a, b) => a - b);
+        for (let i = 0; i + 1 < ts.length; i++) {
+          const t0 = ts[i], t1 = ts[i + 1], len = (t1 - t0) * L;
+          if (len <= 0) continue;
+          const pax = ax + t0 * dx, pay = ay + t0 * dy, pbx = ax + t1 * dx, pby = ay + t1 * dy;
+          let dmin = Infinity;
+          for (const q of sing) dmin = Math.min(dmin, distToSegment(q.x, q.y, pax, pay, pbx, pby));
+          const k = Math.min(4000, Math.max(8, Math.ceil((8 * len) / Math.max(dmin, 1e-9))));
+          let acc = 0;
+          for (let j = 0; j < k; j++) for (const g of GL) {
+            const t = t0 + ((j + g.t) / k) * (t1 - t0);
+            const e = field(ax + t * dx, ay + t * dy, scene);
+            acc += g.w * (e[0] * nx + e[1] * ny);
+          }
+          phi += (acc * len) / k;
+        }
+      }
+    } else {
+      const a = probe.h / 2, br = [];
+      for (const c of cyls) {
+        const d = Math.hypot(c.x - probe.x, c.y - probe.y);
+        if (d > Math.abs(a - c.R) && d < a + c.R) {
+          const p0 = Math.atan2(c.y - probe.y, c.x - probe.x);
+          const al = Math.acos(Math.max(-1, Math.min(1, (a * a + d * d - c.R * c.R) / (2 * a * d))));
+          for (const t of [p0 - al, p0 + al]) br.push(((t % TWO_PI) + TWO_PI) % TWO_PI);
+        }
+      }
+      br.sort((u, v) => u - v);
+      const arcs = [];
+      if (!br.length) arcs.push([0, TWO_PI]);
+      else for (let i = 0; i < br.length; i++) arcs.push([br[i], i + 1 < br.length ? br[i + 1] : br[0] + TWO_PI]);
+      let dmin = Infinity;
+      for (const q of sing) dmin = Math.min(dmin, Math.abs(Math.hypot(q.x - probe.x, q.y - probe.y) - a));
+      for (const [t0, t1] of arcs) {
+        const span = t1 - t0; if (span <= 0) continue;
+        const len = a * span;
+        const k = Math.min(4000, Math.max(Math.ceil((16 * span) / Math.PI), Math.ceil((8 * len) / Math.max(dmin, 1e-9))));
+        let acc = 0;
+        for (let j = 0; j < k; j++) for (const g of GL) {
+          const t = t0 + ((j + g.t) / k) * span, c = Math.cos(t), s = Math.sin(t);
+          const e = field(probe.x + a * c, probe.y + a * s, scene);
+          acc += g.w * (e[0] * c + e[1] * s);
+        }
+        phi += (acc * len) / k;
+      }
+    }
+    const area = probeArea(probe);
+    return { phi, area, ratio: phi / area };
+  }
+
+  /* Áreas de interseção, usadas como referência independente (integral de rho na sonda). */
+  function lensArea(a, R, d) {
+    if (d >= a + R) return 0;
+    if (d <= Math.abs(R - a)) return Math.PI * Math.min(a, R) ** 2;
+    const al = Math.acos((d * d + a * a - R * R) / (2 * d * a)), be = Math.acos((d * d + R * R - a * a) / (2 * d * R));
+    return a * a * al + R * R * be - 0.5 * Math.sqrt((-d + a + R) * (d + a - R) * (d - a + R) * (d + a + R));
+  }
+  function rectDiskArea(x0, x1, y0, y1, cx, cy, R) {
+    const xa = Math.max(x0, cx - R), xb = Math.min(x1, cx + R);
+    if (xa >= xb) return 0;
+    // x = cx + R sin(phi): a meia-corda vale R cos(phi) e o integrando fica suave entre quinas
+    const pa = Math.asin(Math.max(-1, Math.min(1, (xa - cx) / R))), pb = Math.asin(Math.max(-1, Math.min(1, (xb - cx) / R)));
+    const br = [pa, pb];
+    for (const v of [y1 - cy, y0 - cy, cy - y0, cy - y1]) if (v > 0 && v < R) { const p = Math.acos(v / R); for (const q of [p, -p]) if (q > pa && q < pb) br.push(q); }
+    br.sort((u, v) => u - v);
+    let A = 0;
+    for (let i = 0; i + 1 < br.length; i++) {
+      const p0 = br[i], p1 = br[i + 1], k = 16;
+      for (let j = 0; j < k; j++) for (const g of GL) {
+        const p = p0 + ((j + g.t) / k) * (p1 - p0), hc = R * Math.cos(p);
+        const lo = Math.max(y0, cy - hc), hi = Math.min(y1, cy + hc);
+        A += (g.w * (p1 - p0) / k) * Math.max(0, hi - lo) * hc;
+      }
+    }
+    return A;
+  }
+  const insideProbe = (px, py, p) => (p.shape === "square" ? Math.max(Math.abs(px - p.x), Math.abs(py - p.y)) < p.h / 2 : Math.hypot(px - p.x, py - p.y) < p.h / 2);
+  /* Integral de rho/eps0 sobre a região da sonda (cilindros) mais lam dos fios internos. */
+  function enclosedCharge(probe, scene) {
+    let q = 0;
+    for (const c of scene.cyls || []) {
+      const ov = probe.shape === "square"
+        ? rectDiskArea(probe.x - probe.h / 2, probe.x + probe.h / 2, probe.y - probe.h / 2, probe.y + probe.h / 2, c.x, c.y, c.R)
+        : lensArea(probe.h / 2, c.R, Math.hypot(c.x - probe.x, c.y - probe.y));
+      q += c.rho * ov;
+    }
+    for (const l of scene.lines || []) if (insideProbe(l.x, l.y, probe)) q += l.lam;
+    return q;
+  }
+
+  /* Mapa do divergente numérico: células de lado g que cobrem [-W/2, W/2] x [-H/2, H/2];
+     em cada centro, diferenças centradas com meio passo g/2 nas duas direções.
+     Índice k = j * nx + i, com i da esquerda para a direita e j de cima para baixo. */
+  function divFD(x, y, scene, g) {
+    const h = g / 2;
+    return (field(x + h, y, scene)[0] - field(x - h, y, scene)[0] + field(x, y + h, scene)[1] - field(x, y - h, scene)[1]) / g;
+  }
+  function divGrid(scene, W, H, g) {
+    const nx = Math.round(W / g), ny = Math.round(H / g), fd = new Float64Array(nx * ny), an = new Float64Array(nx * ny);
+    for (let j = 0; j < ny; j++) for (let i = 0; i < nx; i++) {
+      const x = -W / 2 + (i + 0.5) * g, y = H / 2 - (j + 0.5) * g;
+      fd[j * nx + i] = divFD(x, y, scene, g);
+      an[j * nx + i] = divAnalytic(x, y, scene).v;
+    }
+    return { nx, ny, g, fd, an, cx: i => -W / 2 + (i + 0.5) * g, cy: j => H / 2 - (j + 0.5) * g };
+  }
+
+  /* Distribuição oculta reprodutível a partir de uma semente inteira (gerador mulberry32). */
+  function mulberry32(seed) {
+    let a = seed >>> 0;
+    return () => {
+      a = (a + 0x6d2b79f5) >>> 0;
+      let t = a;
+      t = Math.imul(t ^ (t >>> 15), t | 1);
+      t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+      return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
+  }
+  function hiddenDistribution(seed, W = 12, H = 8) {
+    const rnd = mulberry32(seed), n = 2 + Math.floor(rnd() * 3), out = [];
+    const snap = v => Math.round(v * 20) / 20;
+    for (let k = 0; k < n; k++) {
+      for (let tries = 0; tries < 400; tries++) {
+        const R = snap(0.5 + 0.9 * rnd());
+        const rho = (rnd() < 0.5 ? -1 : 1) * (0.5 + 0.5 * Math.floor(rnd() * 5));
+        const m = R + 0.4;
+        const x = snap(-W / 2 + m + rnd() * (W - 2 * m)), y = snap(-H / 2 + m + rnd() * (H - 2 * m));
+        if (out.every(c => Math.hypot(c.x - x, c.y - y) > c.R + R + 0.4)) { out.push({ x, y, R, rho }); break; }
+      }
+    }
+    return out;
+  }
+
+  return { TWO_PI, CATALOG, cylField, lineField, field, divAnalytic, divFD, probeFlux, probeArea, enclosedCharge, lensArea, rectDiskArea, insideProbe, divGrid, mulberry32, hiddenDistribution };
+})();
+if (typeof module !== "undefined") module.exports = Phys;
+</script>
+<script>
+(() => {
+  // Coordenadas do modelo: x para a direita, y para cima, origem no centro da prancheta.
+  const W = 12, H = 8, REVEAL_MIN = 8, SHRINK = [1, 0.5, 0.25, 0.1, 0.05];
+  const cv = document.getElementById("cv"), ctx = cv.getContext("2d");
+  const $ = id => document.getElementById(id);
+  const fmt = (v, d = 4) => (Math.abs(v) < 0.5 * Math.pow(10, -d) ? 0 : v).toLocaleString("pt-BR", { minimumFractionDigits: d, maximumFractionDigits: d });
+  const fmtS = (v, d = 4) => (v > 0 ? "+" : "") + fmt(v, d);
+  const posTxt = (x, y) => "(" + fmt(x, 2) + "; " + fmt(y, 2) + ")";
+  const catLabel = k => Phys.CATALOG[k].label;
+  const shapeNames = { circle: "círculo", square: "quadrado" };
+
+  const situations = [
+    { title: "1. Fluxo por área no limite",
+      setup: () => ({ mode: "scene", cyls: [{ x: -1, y: 0, R: 1.5, rho: 1 }], lines: [], probe: { x: -1.4, y: 0.5, h: 0.5, shape: "circle" }, map: false }),
+      text: "Um cilindro uniformemente carregado está na bancada. Antes de medir, escreva o que você espera para Φ ÷ A com a sonda inteiramente dentro do cilindro, inteiramente fora dele e com o centro sobre a borda. Em cada posição, use Encolher para registrar cinco tamanhos e descreva como a sequência se comporta quando h diminui; depois repita com a sonda quadrada e compare." },
+    { title: "2. Divergente não é setas se afastando",
+      setup: () => ({ mode: "cat", cat: "x0", probe: { x: 2, y: 1, h: 0.3, shape: "circle" }, map: false }),
+      text: "Escolha um campo do catálogo e, olhando apenas as setas, preveja o sinal de div E em três pontos diferentes, anotando a justificativa. Em seguida meça Φ ÷ A com uma sonda pequena nesses pontos e registre. Repita para todos os campos. Para E = r̂/r, meça longe da origem e depois com a origem dentro da sonda; para E = (x, 0), compare o que a figura sugere com o que a sonda mede." },
+    { title: "3. Teorema da divergência",
+      setup: () => ({ mode: "scene", cyls: [{ x: 0, y: 0, R: 1, rho: 1.5 }], lines: [{ x: 3.5, y: -2, lam: 1 }], probe: { x: 0, y: 0, h: 1, shape: "circle" }, bigProbe: 3, map: false }),
+      text: "A sonda, agora grande, envolve o cilindro inteiro. Calcule à mão a integral de ρ/ε₀ sobre a região envolvida e compare com o Φ medido. Depois mude o tamanho, a forma e a posição da sonda, inclusive de modo que ela corte o cilindro ou envolva o fio, e preveja cada nova medida antes de registrá-la." },
+    { title: "4. Distribuição oculta",
+      setup: () => ({ mode: "hidden", probe: { x: 0, y: 0, h: 0.5, shape: "circle" }, map: false }),
+      text: "Entre dois e quatro cilindros carregados estão escondidos e só as setas do campo aparecem. Use a sonda para mapear Φ ÷ A pela prancheta, registrando cada medida, até localizar as regiões carregadas e estimar o centro, o raio e a densidade ρ de cada cilindro. Anote suas estimativas antes de revelar; o botão Revelar fica disponível depois de 8 registros nesta distribuição." }
+  ];
+
+  const state = { mode: "scene", cyls: [], lines: [], cat: "x0", hidden: { seed: 1, cyls: [], revealed: false },
+    probe: { x: 0, y: 0, h: 0.5, shape: "circle" }, sel: null, sit: 0, records: [], arrows: true, big: false, map: false, g: 0.125 };
+  let calc = null, mapCache = { key: "", grid: null };
+
+  const newSeed = () => 1 + Math.floor(Math.random() * 999999);
+  function loadHidden(seed) {
+    state.hidden = { seed, cyls: Phys.hiddenDistribution(seed, W, H), revealed: false };
+    $("seedIn").value = seed;
+  }
+
+  function loadSituation(i) {
+    const s = situations[i].setup();
+    state.sit = i; state.mode = s.mode;
+    state.cyls = (s.cyls || []).map(c => ({ ...c })); state.lines = (s.lines || []).map(l => ({ ...l }));
+    if (s.cat) state.cat = s.cat;
+    state.probe = { ...s.probe }; state.big = !!s.bigProbe; if (s.bigProbe) state.probe.h = s.bigProbe;
+    state.map = s.map; state.sel = state.cyls.length ? { kind: "cyl", i: 0 } : null;
+    if (s.mode === "hidden") loadHidden(newSeed());
+    syncControls();
+    [...$("sitTabs").children].forEach((b, k) => b.setAttribute("aria-pressed", k === i ? "true" : "false"));
+    $("sitTitle").textContent = situations[i].title;
+    $("sitText").textContent = situations[i].text;
+    update();
+  }
+
+  function syncControls() {
+    $("modeSel").value = state.mode; $("catSel").value = state.cat; $("shapeSel").value = state.probe.shape;
+    $("optMap").checked = state.map; $("gSel").value = String(state.g);
+    $("optBig").checked = state.big; $("hSl").max = state.big ? 4 : 1;
+    $("hSl").value = state.probe.h;
+  }
+
+  const scene = () => state.mode === "cat" ? { cat: state.cat } : state.mode === "hidden" ? { cyls: state.hidden.cyls, lines: [] } : { cyls: state.cyls, lines: state.lines };
+  const concealed = () => state.mode === "hidden" && !state.hidden.revealed;
+  const singulars = sc => sc.cat ? (Phys.CATALOG[sc.cat].singular ? [{ x: 0, y: 0 }] : []) : (sc.lines || []);
+
+  function probeBox(p) { // distâncias mínima e máxima de um ponto à região da sonda
+    return (cx, cy) => {
+      if (p.shape === "circle") { const d = Math.hypot(cx - p.x, cy - p.y); return [Math.max(0, d - p.h / 2), d + p.h / 2]; }
+      const s = p.h / 2, dx = Math.abs(cx - p.x), dy = Math.abs(cy - p.y);
+      return [Math.hypot(Math.max(0, dx - s), Math.max(0, dy - s)), Math.hypot(dx + s, dy + s)];
+    };
+  }
+  function borderDist(p, qx, qy) {
+    if (p.shape === "circle") return Math.abs(Math.hypot(qx - p.x, qy - p.y) - p.h / 2);
+    const s = p.h / 2, dx = Math.abs(qx - p.x) - s, dy = Math.abs(qy - p.y) - s;
+    return dx > 0 || dy > 0 ? Math.hypot(Math.max(dx, 0), Math.max(dy, 0)) : -Math.max(dx, dy);
+  }
+
+  function measure(p, sc) {
+    const f = Phys.probeFlux(p, sc), ref = Phys.divAnalytic(p.x, p.y, sc);
+    return { ...f, ref, q: sc.cat ? null : Phys.enclosedCharge(p, sc) };
+  }
+
+  function recompute() {
+    const sc = scene(), p = state.probe, m = measure(p, sc), box = probeBox(p);
+    // a borda de algum cilindro cruza a borda da sonda (a sonda contém pontos de dentro e de fora dele, sem envolvê-lo inteiro)
+    const straddle = (sc.cyls || []).some(c => borderDist(p, c.x, c.y) < c.R && box(c.x, c.y)[1] > c.R);
+    const sing = singulars(sc);
+    const singIn = sing.some(q => Phys.insideProbe(q.x, q.y, p)), singNear = sing.some(q => borderDist(p, q.x, q.y) < 0.01);
+    calc = { sc, ...m, straddle, singIn, singNear };
+  }
+
+  // ---------- desenho ----------
+  let scale = 60, dpr = 1, colors = {}, rgb = {};
+  function parseColor(s) {
+    s = s.trim();
+    if (s[0] === "#") { const h = s.length === 4 ? s.slice(1).split("").map(c => c + c).join("") : s.slice(1); return [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)); }
+    const m = s.match(/[\d.]+/g); return m ? m.slice(0, 3).map(Number) : [128, 128, 128];
+  }
+  function readColors() {
+    const cs = getComputedStyle(document.documentElement);
+    for (const k of ["sheet", "ink", "muted", "grid", "grid-major", "pos", "neg", "field", "accent", "region", "math"]) colors[k] = cs.getPropertyValue("--" + k).trim();
+    for (const k of ["sheet", "pos", "neg"]) rgb[k] = parseColor(colors[k]);
+    mapCache.key = "";
+  }
+  function pal(t) { // paleta divergente: neg — sheet — pos
+    t = Math.max(-1, Math.min(1, t));
+    const a = rgb.sheet, b = t < 0 ? rgb.neg : rgb.pos, u = Math.abs(t);
+    return [0, 1, 2].map(i => Math.round(a[i] + (b[i] - a[i]) * u));
+  }
+  const palCss = (t, al = 1) => { const c = pal(t); return "rgba(" + c[0] + "," + c[1] + "," + c[2] + "," + al + ")"; };
+  function resize() {
+    const w = cv.parentElement.clientWidth;
+    dpr = window.devicePixelRatio || 1;
+    scale = w / W;
+    cv.width = Math.round(w * dpr); cv.height = Math.round(H * scale * dpr);
+    cv.style.height = H * scale + "px";
+    draw();
+  }
+  const X = x => (x + W / 2) * scale, Y = y => (H / 2 - y) * scale;
+
+  function arrow(x, y, ux, uy, L, color, alpha, width = 1.4) {
+    const x2 = x + ux * L, y2 = y + uy * L, h = Math.min(6, L * 0.35);
+    ctx.globalAlpha = alpha; ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = width;
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x2, y2); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - ux * h - uy * h * 0.55, y2 - uy * h + ux * h * 0.55);
+    ctx.lineTo(x2 - ux * h + uy * h * 0.55, y2 - uy * h - ux * h * 0.55);
+    ctx.closePath(); ctx.fill(); ctx.globalAlpha = 1;
+  }
+
+  // Escala da paleta: maior |ρ| visível na bancada; catálogo: 2.
+  function colorScale() {
+    if (state.mode === "cat") return 2;
+    const cs = state.mode === "hidden" ? state.hidden.cyls : state.cyls;
+    return Math.max(0.5, ...cs.map(c => Math.abs(c.rho)));
+  }
+  const mapAllowed = () => !concealed();
+  const showMap = () => state.map && mapAllowed();
+  const showRho = () => !showMap() && state.mode !== "cat" && !concealed();
+
+  function mapImage() {
+    const sc = calc.sc, key = JSON.stringify(sc) + "|" + state.g + "|" + colorScale() + "|" + colors.sheet + colors.pos + colors.neg;
+    if (mapCache.key === key) return mapCache.img;
+    const grid = Phys.divGrid(sc, W, H, state.g), S = colorScale();
+    const off = document.createElement("canvas"); off.width = grid.nx; off.height = grid.ny;
+    const oc = off.getContext("2d"), im = oc.createImageData(grid.nx, grid.ny);
+    for (let k = 0; k < grid.nx * grid.ny; k++) {
+      const v = grid.fd[k], c = Number.isFinite(v) ? pal(v / S) : rgb.sheet;
+      im.data[4 * k] = c[0]; im.data[4 * k + 1] = c[1]; im.data[4 * k + 2] = c[2]; im.data[4 * k + 3] = 255;
+    }
+    oc.putImageData(im, 0, 0);
+    mapCache = { key, img: off };
+    return off;
+  }
+
+  function draw() {
+    if (!calc) return;
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.fillStyle = colors.sheet; ctx.fillRect(0, 0, W * scale, H * scale);
+    const S = colorScale(), sc = calc.sc;
+    if (showMap()) { ctx.imageSmoothingEnabled = false; ctx.drawImage(mapImage(), 0, 0, W * scale, H * scale); }
+    if (showRho()) for (const c of sc.cyls) { ctx.fillStyle = palCss(c.rho / S, 0.9); ctx.beginPath(); ctx.arc(X(c.x), Y(c.y), c.R * scale, 0, 2 * Math.PI); ctx.fill(); }
+    // papel quadriculado: 0,5 u e 1 u
+    ctx.globalAlpha = showMap() ? 0.35 : 1;
+    for (let g = 0; g <= W * 2; g++) { ctx.strokeStyle = g % 2 ? colors.grid : colors["grid-major"]; ctx.lineWidth = 1; ctx.beginPath(); ctx.moveTo(Math.round(g / 2 * scale) + 0.5, 0); ctx.lineTo(Math.round(g / 2 * scale) + 0.5, H * scale); ctx.stroke(); }
+    for (let g = 0; g <= H * 2; g++) { ctx.strokeStyle = g % 2 ? colors.grid : colors["grid-major"]; ctx.beginPath(); ctx.moveTo(0, Math.round(g / 2 * scale) + 0.5); ctx.lineTo(W * scale, Math.round(g / 2 * scale) + 0.5); ctx.stroke(); }
+    ctx.globalAlpha = 1;
+    // eixos pela origem e numeração
+    ctx.strokeStyle = colors.muted; ctx.lineWidth = 1; ctx.globalAlpha = 0.6;
+    ctx.beginPath(); ctx.moveTo(0, Y(0) + 0.5); ctx.lineTo(W * scale, Y(0) + 0.5); ctx.moveTo(X(0) + 0.5, 0); ctx.lineTo(X(0) + 0.5, H * scale); ctx.stroke();
+    ctx.globalAlpha = 1;
+    const step = scale < 45 ? 2 : 1;
+    ctx.fillStyle = colors.muted; ctx.font = "400 " + (scale < 45 ? 9 : 11) + "px IBM Plex Mono, monospace";
+    ctx.textAlign = "center"; ctx.textBaseline = "bottom";
+    for (let gx = -W / 2 + step; gx < W / 2; gx += step) if (gx) ctx.fillText(String(gx).replace("-", "−"), X(gx), H * scale - 2);
+    ctx.textAlign = "left"; ctx.textBaseline = "middle";
+    for (let gy = -H / 2 + step; gy < H / 2; gy += step) if (gy) ctx.fillText(String(gy).replace("-", "−"), 3, Y(gy));
+    ctx.textAlign = "left"; ctx.textBaseline = "top"; ctx.fillStyle = state.mode === "cat" ? colors.math : colors.ink;
+    ctx.font = "600 12px IBM Plex Mono, monospace"; ctx.fillText("O", X(0) + 5, Y(0) + 4);
+    ctx.beginPath(); ctx.arc(X(0), Y(0), 3, 0, 2 * Math.PI); ctx.fill();
+    // contornos dos cilindros (cena e distribuição revelada)
+    if (sc.cyls && !concealed()) sc.cyls.forEach((c, i) => {
+      const selected = state.mode === "scene" && state.sel && state.sel.kind === "cyl" && state.sel.i === i;
+      ctx.strokeStyle = c.rho >= 0 ? colors.pos : colors.neg; ctx.lineWidth = selected ? 2.5 : 1.5;
+      ctx.setLineDash(state.mode === "hidden" ? [5, 4] : []);
+      ctx.beginPath(); ctx.arc(X(c.x), Y(c.y), c.R * scale, 0, 2 * Math.PI); ctx.stroke(); ctx.setLineDash([]);
+      // alça central
+      const r = Math.max(5, Math.min(7, scale * 0.1));
+      ctx.fillStyle = colors.sheet; ctx.lineWidth = 2; ctx.beginPath(); ctx.arc(X(c.x), Y(c.y), r, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
+      if (selected) { ctx.strokeStyle = colors.ink; ctx.lineWidth = 2; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.arc(X(c.x), Y(c.y), r + 5, 0, 2 * Math.PI); ctx.stroke(); ctx.setLineDash([]); }
+      ctx.fillStyle = colors.ink; ctx.font = "500 " + (scale < 45 ? 10 : 12) + "px IBM Plex Mono, monospace"; ctx.textAlign = "center"; ctx.textBaseline = "top";
+      ctx.fillText("ρ=" + fmt(c.rho, 2), X(c.x), Y(c.y) + r + 4);
+    });
+    // vetores
+    if (state.arrows) {
+      const pts = [], mags = [];
+      for (let gx = -W / 2 + 0.25; gx < W / 2; gx += 0.5) for (let gy = -H / 2 + 0.25; gy < H / 2; gy += 0.5) {
+        const e = Phys.field(gx, gy, sc), m = Math.hypot(e[0], e[1]);
+        pts.push([gx, gy, e[0], e[1], m]); if (m > 1e-9) mags.push(m);
+      }
+      mags.sort((a, b) => a - b);
+      const F0 = Math.max(1e-6, 0.6 * (mags[Math.floor(mags.length / 2)] || 1));
+      for (const [gx, gy, ex, ey, m] of pts) {
+        if (m < 1e-9) continue;
+        if (sc.lines && sc.lines.some(l => Math.hypot(l.x - gx, l.y - gy) < 0.3)) continue;
+        const L = 0.4 * (1 - Math.exp(-m / F0)), ux = ex / m, uy = -ey / m;
+        arrow(X(gx) - ux * L * scale / 2, Y(gy) - uy * L * scale / 2, ux, uy, L * scale, colors.field, 0.35 + 0.5 * (L / 0.4));
+      }
+    }
+    // fios
+    if (sc.lines) sc.lines.forEach((l, i) => {
+      const col = l.lam > 0 ? colors.pos : l.lam < 0 ? colors.neg : colors.muted;
+      const r = Math.max(7, Math.min(14, 0.15 * scale));
+      if (state.sel && state.sel.kind === "line" && state.sel.i === i) { ctx.strokeStyle = colors.ink; ctx.lineWidth = 2; ctx.setLineDash([3, 3]); ctx.beginPath(); ctx.arc(X(l.x), Y(l.y), r + 5, 0, 2 * Math.PI); ctx.stroke(); ctx.setLineDash([]); }
+      ctx.fillStyle = col; ctx.beginPath(); ctx.arc(X(l.x), Y(l.y), r, 0, 2 * Math.PI); ctx.fill();
+      ctx.fillStyle = colors.sheet; ctx.font = "600 " + Math.round(Math.max(11, Math.min(15, r * 1.2))) + "px IBM Plex Sans, system-ui, sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(l.lam > 0 ? "+" : l.lam < 0 ? "−" : "0", X(l.x), Y(l.y) + 1);
+      ctx.fillStyle = colors.ink; ctx.font = "500 " + (scale < 45 ? 10 : 12) + "px IBM Plex Mono, monospace";
+      ctx.fillText("λ=" + fmt(l.lam, 1), X(l.x), Y(l.y) + r + 12);
+    });
+    // sonda
+    const p = state.probe, ph = p.h * scale, col = Math.abs(calc.phi) < 1e-6 ? colors.muted : calc.phi > 0 ? colors.pos : colors.neg;
+    const path = () => { ctx.beginPath(); if (p.shape === "circle") ctx.arc(X(p.x), Y(p.y), ph / 2, 0, 2 * Math.PI); else ctx.rect(X(p.x) - ph / 2, Y(p.y) - ph / 2, ph, ph); };
+    ctx.fillStyle = colors.region; path(); ctx.fill();
+    ctx.strokeStyle = col; ctx.lineWidth = ph < 10 ? 1.5 : 3; path(); ctx.stroke();
+    if (ph < 14) { // marcador de localização para sondas muito pequenas
+      ctx.strokeStyle = colors.accent; ctx.lineWidth = 1.5; ctx.setLineDash([3, 3]);
+      ctx.beginPath(); ctx.arc(X(p.x), Y(p.y), 12, 0, 2 * Math.PI); ctx.stroke(); ctx.setLineDash([]);
+    }
+    ctx.strokeStyle = colors.accent; ctx.lineWidth = 1.5; const cr = Math.min(6, Math.max(3, ph / 4));
+    ctx.beginPath(); ctx.moveTo(X(p.x) - cr, Y(p.y)); ctx.lineTo(X(p.x) + cr, Y(p.y)); ctx.moveTo(X(p.x), Y(p.y) - cr); ctx.lineTo(X(p.x), Y(p.y) + cr); ctx.stroke();
+    // escala de 1 u
+    ctx.strokeStyle = colors.ink; ctx.lineWidth = 2; const sx = W * scale - scale - 14, sy = H * scale - 22;
+    ctx.beginPath(); ctx.moveTo(sx, sy); ctx.lineTo(sx + scale, sy); ctx.moveTo(sx, sy - 4); ctx.lineTo(sx, sy + 4); ctx.moveTo(sx + scale, sy - 4); ctx.lineTo(sx + scale, sy + 4); ctx.stroke();
+    ctx.fillStyle = colors.ink; ctx.font = "500 12px IBM Plex Mono, monospace"; ctx.textAlign = "center"; ctx.textBaseline = "bottom"; ctx.fillText("1 u", sx + scale / 2, sy - 5);
+  }
+
+  // ---------- painel ----------
+  const hints = {
+    scene: "Arraste a sonda ou toque num ponto livre para levá-la até lá; com a prancheta em foco, as setas do teclado a movem (Shift para passos maiores). Arraste um cilindro pela alça central e um fio pelo próprio disco; toque neles para ajustar ρ, R ou λ.",
+    cat: "Arraste a sonda ou toque num ponto para levá-la até lá; as setas do teclado também a movem. A origem O fica no centro da prancheta.",
+    hidden: "Só as setas do campo aparecem. Arraste a sonda ou toque num ponto para medir ali e registre cada medida; o mapa do divergente fica bloqueado até a distribuição ser revelada."
+  };
+  function refText(r) {
+    if (concealed()) return "oculto";
+    if (r.status === "borda") return "na borda";
+    if (r.status === "singular") return "singular";
+    return fmt(r.v);
+  }
+  function panel() {
+    const m = state.mode, p = state.probe, msgs = [];
+    $("catBox").hidden = m !== "cat"; $("addBox").hidden = m !== "scene";
+    $("mathBanner").hidden = m !== "cat"; $("hidBox").hidden = m !== "hidden";
+    $("hint").textContent = hints[m];
+    $("optMap").disabled = !mapAllowed(); $("mapLbl").classList.toggle("off", !mapAllowed());
+    $("refLbl").firstChild.textContent = m === "cat" ? "div E analítico no centro" : "ρ/ε₀ no centro";
+    $("refLbl").classList.toggle("mth", m === "cat");
+    const catHidden = m === "cat" && !state.records.some(r => r.field === catLabel(state.cat));
+    $("refLbl").lastChild.textContent = m === "cat" ? (catHidden ? "aparece depois do primeiro registro neste campo" : catLabel(state.cat) + ": div E = " + Phys.CATALOG[state.cat].divText) : "valor local do modelo";
+    $("qLbl").hidden = $("rQ").hidden = m === "cat";
+    $("rRatio").textContent = fmt(calc.ratio);
+    $("rRef").textContent = catHidden ? "oculto" : refText(calc.ref);
+    $("rPhi").textContent = fmt(calc.phi, 6);
+    $("rQ").textContent = concealed() ? "oculto" : calc.q == null ? "—" : fmt(calc.q, 6);
+    $("rA").textContent = fmt(calc.area, 4) + " u²";
+    $("rPos").textContent = posTxt(p.x, p.y);
+    $("hOut").textContent = fmt(p.h, 2) + " u";
+    if (calc.singNear) msgs.push(m === "cat" ? "A borda da sonda passa sobre a origem, onde o campo é singular; o valor numérico deixa de ser confiável." : "A borda da sonda passa sobre um fio, onde o campo é singular; o valor numérico deixa de ser confiável.");
+    else if (calc.singIn) msgs.push(m === "cat" ? "A origem, onde o campo não é definido, está dentro da sonda." : "Há um fio dentro da sonda.");
+    if (calc.straddle && !concealed()) msgs.push("A sonda cruza a borda de um cilindro, onde ρ muda bruscamente.");
+    $("warn").hidden = !msgs.length; $("warn").textContent = msgs.join(" ");
+    // seleção
+    const sel = m === "scene" ? state.sel : null;
+    const c = sel && sel.kind === "cyl" ? state.cyls[sel.i] : null, l = sel && sel.kind === "line" ? state.lines[sel.i] : null;
+    $("cylBox").hidden = !c; $("lineBox").hidden = !l; $("selHint").hidden = m !== "scene" || !!c || !!l;
+    if (c) { $("rhoSl").value = c.rho; $("rhoOut").textContent = fmt(c.rho, 2) + " ρ₀"; $("RSl").value = c.R; $("ROut").textContent = fmt(c.R, 2) + " u"; }
+    if (l) { $("lamSl").value = l.lam; $("lamOut").textContent = fmt(l.lam, 1) + " ρ₀u²"; }
+    // distribuição oculta
+    if (m === "hidden") {
+      const n = hiddenCount();
+      $("reveal").disabled = state.hidden.revealed || n < REVEAL_MIN;
+      $("revealHint").textContent = state.hidden.revealed ? "distribuição revelada" : n >= REVEAL_MIN ? n + " registros nesta distribuição" : n + " de " + REVEAL_MIN + " registros nesta distribuição";
+      const ol = $("revealList"); ol.hidden = !state.hidden.revealed; ol.innerHTML = "";
+      if (state.hidden.revealed) state.hidden.cyls.forEach(q => { const li = document.createElement("li"); li.textContent = "centro " + posTxt(q.x, q.y) + ", R = " + fmt(q.R, 2) + " u, ρ = " + fmtS(q.rho, 2) + " ρ₀"; ol.appendChild(li); });
+    }
+    // legenda de cores
+    const S = colorScale();
+    $("scaleBox").hidden = !(showMap() || (showRho() && calc.sc.cyls && calc.sc.cyls.length));
+    $("sMin").textContent = "−" + fmt(S, 1); $("sMax").textContent = "+" + fmt(S, 1);
+    $("scaleTitle").textContent = showMap() ? "div E numérico, malha de " + fmt(state.g, 3) + " u" : "ρ/ε₀ das fontes";
+    $("scaleNote").textContent = showMap() ? "diferenças centradas em cada célula; em ρ₀/ε₀, valores além da escala saturam" : "em ρ₀/ε₀; a mesma escala do mapa do divergente";
+  }
+
+  function update() { recompute(); draw(); panel(); }
+
+  // ---------- interação ----------
+  function toWorld(e) { const r = cv.getBoundingClientRect(); return { x: (e.clientX - r.left) / scale - W / 2, y: H / 2 - (e.clientY - r.top) / scale }; }
+  const clampX = x => Math.max(-W / 2 + 0.02, Math.min(W / 2 - 0.02, x)), clampY = y => Math.max(-H / 2 + 0.02, Math.min(H / 2 - 0.02, y));
+  let drag = null;
+  function hit(p, hr) {
+    if (state.mode === "scene") {
+      let best = null, bd = Infinity;
+      state.lines.forEach((l, i) => { const d = Math.hypot(l.x - p.x, l.y - p.y); if (d < hr && d < bd) { bd = d; best = { kind: "line", i }; } });
+      state.cyls.forEach((c, i) => { const d = Math.hypot(c.x - p.x, c.y - p.y); if (d < hr && d < bd) { bd = d; best = { kind: "cyl", i }; } });
+      if (best) return best;
+    }
+    return { kind: "probe" };
+  }
+  cv.addEventListener("pointerdown", e => {
+    const p = toWorld(e), hr = e.pointerType === "touch" ? 0.45 : 0.25, h = hit(p, hr);
+    if (h.kind === "probe") {
+      const pr = state.probe, inside = Math.hypot(pr.x - p.x, pr.y - p.y) < Math.max(pr.h / 2, hr);
+      if (!inside) { pr.x = clampX(p.x); pr.y = clampY(p.y); }
+      drag = { kind: "probe", dx: pr.x - p.x, dy: pr.y - p.y };
+    } else { state.sel = h; const o = h.kind === "cyl" ? state.cyls[h.i] : state.lines[h.i]; drag = { ...h, dx: o.x - p.x, dy: o.y - p.y }; }
+    cv.setPointerCapture(e.pointerId); cv.className = "grabbing"; e.preventDefault(); update();
+  });
+  cv.addEventListener("pointermove", e => {
+    const p = toWorld(e);
+    if (!drag) {
+      const hr = 0.25, pr = state.probe;
+      cv.className = (hit(p, hr).kind !== "probe" || Math.hypot(pr.x - p.x, pr.y - p.y) < Math.max(pr.h / 2, hr)) ? "grab" : "";
+      return;
+    }
+    const x = clampX(p.x + drag.dx), y = clampY(p.y + drag.dy);
+    if (drag.kind === "probe") { state.probe.x = x; state.probe.y = y; }
+    else { const o = drag.kind === "cyl" ? state.cyls[drag.i] : state.lines[drag.i]; o.x = x; o.y = y; }
+    update();
+  });
+  const endDrag = () => { drag = null; cv.className = ""; };
+  cv.addEventListener("pointerup", endDrag); cv.addEventListener("pointercancel", endDrag);
+  cv.addEventListener("keydown", e => {
+    const k = { ArrowLeft: [-1, 0], ArrowRight: [1, 0], ArrowUp: [0, 1], ArrowDown: [0, -1] }[e.key];
+    if (!k) return;
+    const st = e.shiftKey ? 0.5 : 0.05;
+    state.probe.x = clampX(Math.round((state.probe.x + k[0] * st) * 100) / 100);
+    state.probe.y = clampY(Math.round((state.probe.y + k[1] * st) * 100) / 100);
+    e.preventDefault(); update();
+  });
+
+  function freeSpot(R) {
+    for (let t = 0; t < 80; t++) {
+      const x = Math.round((-W / 2 + R + 0.3 + Math.random() * (W - 2 * R - 0.6)) * 10) / 10, y = Math.round((-H / 2 + R + 0.3 + Math.random() * (H - 2 * R - 0.6)) * 10) / 10;
+      if (state.cyls.every(c => Math.hypot(c.x - x, c.y - y) > c.R + R + 0.2) && state.lines.every(l => Math.hypot(l.x - x, l.y - y) > R + 0.4)) return { x, y };
+    }
+    return { x: 0, y: 0 };
+  }
+  $("addCylPos").onclick = () => { const s = freeSpot(1); state.cyls.push({ ...s, R: 1, rho: 1 }); state.sel = { kind: "cyl", i: state.cyls.length - 1 }; update(); };
+  $("addCylNeg").onclick = () => { const s = freeSpot(1); state.cyls.push({ ...s, R: 1, rho: -1 }); state.sel = { kind: "cyl", i: state.cyls.length - 1 }; update(); };
+  $("addLine").onclick = () => { const s = freeSpot(0.2); state.lines.push({ ...s, lam: 1 }); state.sel = { kind: "line", i: state.lines.length - 1 }; update(); };
+  $("delCyl").onclick = () => { if (state.sel && state.sel.kind === "cyl") { state.cyls.splice(state.sel.i, 1); state.sel = null; update(); } };
+  $("delLine").onclick = () => { if (state.sel && state.sel.kind === "line") { state.lines.splice(state.sel.i, 1); state.sel = null; update(); } };
+  $("rhoSl").oninput = e => { if (state.sel && state.sel.kind === "cyl") { state.cyls[state.sel.i].rho = parseFloat(e.target.value); update(); } };
+  $("RSl").oninput = e => { if (state.sel && state.sel.kind === "cyl") { state.cyls[state.sel.i].R = parseFloat(e.target.value); update(); } };
+  $("lamSl").oninput = e => { if (state.sel && state.sel.kind === "line") { state.lines[state.sel.i].lam = parseFloat(e.target.value); update(); } };
+  $("hSl").oninput = e => { state.probe.h = parseFloat(e.target.value); update(); };
+  $("optBig").onchange = e => { state.big = e.target.checked; if (!state.big) state.probe.h = Math.min(1, state.probe.h); syncControls(); update(); };
+  $("shapeSel").onchange = e => { state.probe.shape = e.target.value; update(); };
+  $("modeSel").onchange = e => {
+    state.mode = e.target.value; state.sel = null;
+    if (state.mode === "hidden" && !state.hidden.cyls.length) loadHidden(newSeed());
+    update();
+  };
+  $("catSel").onchange = e => { state.cat = e.target.value; update(); };
+  $("optArrows").onchange = e => { state.arrows = e.target.checked; draw(); };
+  $("optMap").onchange = e => { state.map = e.target.checked; draw(); panel(); };
+  $("gSel").onchange = e => { state.g = parseFloat(e.target.value); draw(); panel(); };
+  $("seedLoad").onclick = () => { const s = Math.round(parseFloat($("seedIn").value)); if (s >= 1 && s <= 999999) { loadHidden(s); update(); } };
+  $("seedNew").onclick = () => { loadHidden(newSeed()); update(); };
+  $("reveal").onclick = () => { if (hiddenCount() >= REVEAL_MIN) { state.hidden.revealed = true; renderRecords(); update(); } };
+
+  situations.forEach((s, i) => { const b = document.createElement("button"); b.type = "button"; b.textContent = "S" + (i + 1); b.title = s.title; b.onclick = () => loadSituation(i); $("sitTabs").appendChild(b); });
+
+  // ---------- registro ----------
+  const hiddenCount = () => state.records.filter(r => r.seed === state.hidden.seed).length;
+  const EMPTY = '<tr><td colspan="9" style="text-align:left;font-family:var(--body);color:var(--muted);white-space:normal">Nenhuma medida registrada. Faça uma previsão, posicione a sonda e toque em Registrar medida ou em Encolher.</td></tr>';
+  const refShown = r => r.seed != null && !(r.seed === state.hidden.seed && state.hidden.revealed) ? "oculto" : r.refStatus === "ok" ? fmt(r.ref, 4) : r.refStatus === "borda" ? "na borda" : "singular";
+  function pushRecord(p) {
+    const sc = scene(), m = measure(p, sc);
+    state.records.push({ k: state.records.length + 1, sit: state.sit + 1, field: state.mode === "cat" ? catLabel(state.cat) : state.mode === "hidden" ? "oculta, semente " + state.hidden.seed : "cilindros e fios",
+      shape: shapeNames[p.shape], x: p.x, y: p.y, h: p.h, phi: m.phi, ratio: m.ratio, ref: m.ref.v, refStatus: m.ref.status, seed: state.mode === "hidden" ? state.hidden.seed : null });
+  }
+  function renderRecords() {
+    const tb = $("recBody");
+    if (!state.records.length) { tb.innerHTML = EMPTY; return; }
+    tb.innerHTML = "";
+    state.records.forEach(r => {
+      const tr = document.createElement("tr");
+      [r.k, "S" + r.sit, r.field, r.shape, posTxt(r.x, r.y), fmt(r.h, 2), fmt(r.phi, 5), fmt(r.ratio, 4), refShown(r)].forEach(v => { const td = document.createElement("td"); td.textContent = v; tr.appendChild(td); });
+      tb.appendChild(tr);
+    });
+    tb.parentElement.parentElement.scrollTop = 1e6;
+  }
+  $("record").onclick = () => { pushRecord(state.probe); renderRecords(); panel(); };
+  $("shrink").onclick = () => { for (const h of SHRINK) pushRecord({ ...state.probe, h }); renderRecords(); panel(); };
+  $("clearRec").onclick = () => { state.records = []; renderRecords(); panel(); $("csvBox").hidden = true; $("copyMsg").hidden = true; };
+  function csv() {
+    const head = "medida;situacao;campo;sonda;x;y;h;Phi;Phi_sobre_A;referencia";
+    return [head, ...state.records.map(r => [r.k, r.sit, r.field, r.shape, fmt(r.x, 3), fmt(r.y, 3), fmt(r.h, 3), fmt(r.phi, 8), fmt(r.ratio, 8), refShown(r)].join(";"))].join("\n");
+  }
+  $("copyCsv").onclick = () => {
+    const text = csv(), box = $("csvBox"), msg = $("copyMsg");
+    const fallback = () => { box.value = text; box.hidden = false; box.focus(); box.select(); msg.hidden = false; msg.textContent = "Selecione o texto abaixo e copie (Ctrl+C ou toque longo)."; };
+    try {
+      navigator.clipboard.writeText(text).then(() => { msg.hidden = false; msg.textContent = "Tabela copiada. Cole numa planilha; as colunas são separadas por ponto e vírgula."; box.hidden = true; }, fallback);
+    } catch (err) { fallback(); }
+  };
+  renderRecords();
+
+  // ---------- teste de verificação ao carregar ----------
+  (function selfTest() {
+    const sc = { cyls: [{ x: 0, y: 0, R: 1.5, rho: 1 }], lines: [] };
+    const a = Phys.probeFlux({ x: 0.3, y: -0.2, h: 0.05, shape: "circle" }, sc).ratio;
+    const b = Phys.probeFlux({ x: 0, y: 0, h: 4, shape: "square" }, sc).phi;
+    const c = Phys.probeFlux({ x: 0.1, y: 0.1, h: 0.5, shape: "circle" }, { cat: "inv" }).phi;
+    const ok = Math.abs(a - 1) < 1e-9 && Math.abs(b - 2.25 * Math.PI) < 1e-9 && Math.abs(c - 2 * Math.PI) < 1e-9;
+    $("verify").innerHTML = "<span>Teste de verificação ao abrir: <b>" + (ok ? "aprovado" : "reprovado") + "</b></span>" +
+      "<span>cilindro R = 1,5 u, ρ = 1, sonda h = 0,05 u dentro: Φ ÷ A = " + fmt(a, 6) + " (previsto 1)</span>" +
+      "<span>sonda quadrada h = 4 u envolvendo o cilindro: Φ = " + fmt(b, 6) + " (previsto ρπR² = " + fmt(2.25 * Math.PI, 6) + ")</span>" +
+      "<span>E = r̂/r, sonda com a origem dentro: Φ = " + fmt(c, 6) + " (previsto 2π)</span>";
+  })();
+
+  // tema
+  const mq = window.matchMedia("(prefers-color-scheme: dark)");
+  const retheme = () => { readColors(); draw(); };
+  mq.addEventListener ? mq.addEventListener("change", retheme) : mq.addListener(retheme);
+  new MutationObserver(retheme).observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+
+  readColors();
+  loadSituation(0);
+  window.addEventListener("resize", resize);
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(() => draw());
+  resize();
+})();
+</script>
+
+</body>
+</html>
